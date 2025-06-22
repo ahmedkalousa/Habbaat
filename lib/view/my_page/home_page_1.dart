@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:work_spaces/provider/my_provider.dart';
 import 'package:work_spaces/provider/space_units_provider.dart';
 import 'package:work_spaces/util/constant.dart';
+import 'package:work_spaces/view/my_page/home_page_skeleton.dart';
 import 'package:work_spaces/view/my_page/space_details_page.dart';
 import 'package:work_spaces/view/my_page/unit_details_page.dart';
 import 'package:work_spaces/view/my_wedgit/my_card.dart';
@@ -163,7 +164,7 @@ class _HomePageState extends State<HomePage> {
         return Consumer<SpacesProvider>(
       builder: ( context, provider, child) {  
           if (provider.loading && !provider.isInitialized) {
-            return const Center(child: CircularProgressIndicator());
+            return HomePageSkeleton();
           }
           if (provider.spaces.isEmpty && provider.isInitialized) {
             return const Center(child: Text('لا توجد بيانات متاحة'));

@@ -3,7 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:work_spaces/util/constant.dart';
 import 'package:work_spaces/view/my_page/main_home_page.dart';
 import 'package:work_spaces/view/my_page/units_page.dart';
-import 'package:work_spaces/view/my_page/initiative_page.dart';
+import 'package:work_spaces/view/my_page/map_page.dart';
 import 'package:work_spaces/view/my_wedgit/my_social_media_icon.dart';
 import 'package:url_launcher/url_launcher.dart';
 

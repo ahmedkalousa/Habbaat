@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +12,8 @@ import 'package:work_spaces/model/space_model.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:work_spaces/view/my_wedgit/my_state_card.dart';
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:readmore/readmore.dart';
 
 class SpaceDetailsPage extends StatefulWidget {
   static const id = '/SpaceDetailsPage';
@@ -30,6 +30,7 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
   late Animation<Offset> _slideAnimation;
   bool showBackButton = true;
   late ScrollController _scrollController;
+  int _currentImageIndex = 0;
 
   @override
   
@@ -157,35 +158,92 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    CachedNetworkImage(
-                      imageUrl: coverImage,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              primaryColor.withOpacity(0.8),
-                              primaryColor1.withOpacity(0.9),
-                            ],
+                    if (space.images.length > 1)
+                      CarouselSlider(
+                        options: CarouselOptions(
+                          height: 350.h,
+                          viewportFraction: 1.0,
+                          enableInfiniteScroll: true,
+                          autoPlay: true,
+                          autoPlayInterval: Duration(seconds: 4),
+                          autoPlayAnimationDuration: Duration(milliseconds: 800),
+                          autoPlayCurve: Curves.fastOutSlowIn,
+                          pauseAutoPlayOnTouch: true,
+                          scrollDirection: Axis.horizontal,
+                          onPageChanged: (index, reason) {
+                            setState(() {
+                              _currentImageIndex = index;
+                            });
+                          },
+                        ),
+                        items: space.images.map((img) {
+                          final imgUrl = baseUrlImage + img.imageUrl;
+                          return Builder(
+                            builder: (BuildContext context) {
+                              return CachedNetworkImage(
+                                imageUrl: imgUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                placeholder: (context, url) => Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        primaryColor.withOpacity(0.8),
+                                        primaryColor1.withOpacity(0.9),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        primaryColor.withOpacity(0.8),
+                                        primaryColor1.withOpacity(0.9),
+                                      ],
+                                    ),
+                                  ),
+                                  child: const Icon(Icons.error, color: Colors.white, size: 50),
+                                ),
+                              );
+                            },
+                          );
+                        }).toList(),
+                      )
+                    else
+                      CachedNetworkImage(
+                        imageUrl: coverImage,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                primaryColor.withOpacity(0.8),
+                                primaryColor1.withOpacity(0.9),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              primaryColor.withOpacity(0.8),
-                              primaryColor1.withOpacity(0.9),
-                            ],
+                        errorWidget: (context, url, error) => Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                primaryColor.withOpacity(0.8),
+                                primaryColor1.withOpacity(0.9),
+                              ],
+                            ),
                           ),
+                          child: const Icon(Icons.error, color: Colors.white, size: 50),
                         ),
-                        child: const Icon(Icons.error, color: Colors.white, size: 50),
                       ),
-                    ),
                     // Gradient overlay
                     Container(
                       decoration: BoxDecoration(
@@ -200,6 +258,30 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
                         ),
                       ),
                     ),
+                    if (space.images.length > 1)
+                      Positioned(
+                        bottom: 18,
+                        left: 0,
+                        right: 0,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(space.images.length, (index) {
+                            return AnimatedContainer(
+                              duration: Duration(milliseconds: 300),
+                              margin: EdgeInsets.symmetric(horizontal: 4),
+                              width: _currentImageIndex == index ? 16 : 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _currentImageIndex == index ? Colors.white : Colors.white54,
+                                borderRadius: BorderRadius.circular(6),
+                                boxShadow: _currentImageIndex == index
+                                    ? [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))]
+                                    : [],
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
                     if (showBackButton)
                       Positioned(
                         top: MediaQuery.of(context).padding.top + 8,
@@ -364,6 +446,78 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
                                         ),
                                       ),
                                     ),
+                                  if(space.paymentMethods.isNotEmpty)
+                                  Padding(
+                                    padding: EdgeInsets.only(top: 16.h),
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(14.r),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.04),
+                                            blurRadius: 8,
+                                            offset: Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child:  
+                                      Row(
+                                        textDirection: TextDirection.rtl,
+                                        children: [
+                                           Icon(Icons.payments, color: primaryColor, size: 22.sp),
+                                           SizedBox(width: 8.w),
+                                           Expanded(
+                                            child: Text(
+                                              'طرق الدفع المتاحة',
+                                              style: TextStyle(
+                                                fontSize: 15.sp,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(width: 8.w),
+                                          Row(
+                                            children: space.paymentMethods.map((method) {
+                                              IconData icon;
+                                              Color color;
+                                              switch (method.trim()) {
+                                                case 'كاش':
+                                                  icon = Icons.attach_money_rounded;
+                                                  color = Colors.green;
+                                                  break;
+                                              
+                                                case 'بنكي':
+                                                  icon = Icons.credit_card_rounded;
+                                                  color = Colors.blue;
+                                                  break;
+                                                default:
+                                                  icon = Icons.payment;
+                                                  color = Colors.grey;
+                                              }
+                                              return Padding(
+                                                padding: EdgeInsets.only(right: 12.w),
+                                                child: Column(
+                                                  children: [
+                                                    CircleAvatar(
+                                                      backgroundColor: color.withOpacity(0.12),
+                                                      radius: 20.r,
+                                                      child: Icon(icon, color: color, size: 22.sp),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ),
+                                      
+                                        ],
+                                      ),
+                                      
+                                    ),
+                                  ),
+
                                 ],
                               ),
                             ),
@@ -395,15 +549,97 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
                                     ],
                                   ),
                                   Container(
-                                    padding: EdgeInsets.all(16.w),
-                                    child: Text(
-                                      space.bio,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontSize: 15.sp,
-                                        height: 1.7,
-                                      ),
+                                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        ReadMoreText(
+                                          space.bio,
+                                          trimLines: 2,
+                                          trimMode: TrimMode.Line,
+                                          trimCollapsedText: 'عرض المزيد',
+                                          trimExpandedText: 'عرض أقل',
+                                          moreStyle: TextStyle(
+                                            color: Colors.grey.shade700,
+                                            fontSize: 15.sp,
+                                            height: 1.7,
+                                          ),
+                                          lessStyle: TextStyle(
+                                            color: Colors.grey.shade700,
+                                            fontSize: 15.sp,
+                                            height: 1.7,
+                                          ),
+                                          style: TextStyle(
+                                            color: Colors.grey.shade700,
+                                            fontSize: 15.sp,
+                                            height: 1.7,
+                                          ),
+                                          textAlign: TextAlign.start,
+                                          locale: const Locale('ar'),
+                                        ),
+                                      ],
                                     ),
+                                  ),
+                                  if(space.features.isNotEmpty)
+                                  Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            width: 4.w,
+                                            height: 24.h,
+                                            decoration: BoxDecoration(
+                                              color: primaryColor,
+                                              borderRadius: BorderRadius.circular(2.r),
+                                            ),
+                                          ),
+                                          SizedBox(width: 12.w),
+                                          Text(
+                                            'مميزات المساحة',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                              fontSize: 20.sp,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Padding(
+                                        padding: EdgeInsets.only(top: 16.h),
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(14.r),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.04),
+                                                blurRadius: 8,
+                                                offset: Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(FontAwesomeIcons.check, color: Colors.green, size: 22.sp),
+                                              SizedBox(width: 8.w),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: space.features.map((feature) => Padding(
+                                                    padding: EdgeInsets.symmetric(vertical: 2.h),
+                                                    child: Text(
+                                                      feature,
+                                                      style: TextStyle(fontSize: 14.sp, color: Colors.black87),
+                                                    ),
+                                                  )).toList(),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   SizedBox(height: 24.h),
                                   // Map section
@@ -474,8 +710,7 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
                                       ),
                                     ),
                                   ),
-                                  // Units gallery section
-                               ],
+                             ],
                               ),
                             ),
                           ],
@@ -697,6 +932,5 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
       return const SizedBox.shrink(); // تجاهل المنصات غير المعروفة
     }).toList();
   }
-
 
 }

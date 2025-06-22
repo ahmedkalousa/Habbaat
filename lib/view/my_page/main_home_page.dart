@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:work_spaces/view/my_page/home_page_1.dart';
 import 'package:work_spaces/util/constant.dart';
-import 'package:work_spaces/view/my_page/initiative_page.dart';
+import 'package:work_spaces/view/my_page/map_page.dart';
 import 'package:work_spaces/view/my_page/list_page.dart';
 import 'package:work_spaces/view/my_page/spaces_page.dart';
 
@@ -21,7 +21,7 @@ class _mainHomePageState extends State<mainHomePage> {
   List<Widget> screensList = [
     const HomePage(),
     const SpacesPage(),
-    const InitiativePage(),
+    const MapPage(),
     const ListPage(),
   ];
 

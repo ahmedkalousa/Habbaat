@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:work_spaces/util/constant.dart';
 import 'package:work_spaces/view/my_page/main_home_page.dart';
 
@@ -30,12 +31,17 @@ class _splashPageState extends State<splashPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              SizedBox(),
-              SizedBox(
-                height: 200,
-                width: 200,
-                child: Image.asset('images/logo-white.png')),
-                Text('www.habbaat.net',style: TextStyle(color: Colors.white,fontSize: 16,fontWeight: FontWeight.bold),)
+              SizedBox(height: 10.h),
+              Center(
+                child: SizedBox(
+                  height: 200.h,
+                  width: 200.w,
+                  child: Image.asset('images/logo-white.png')),
+              ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24.0),
+                  child: Text('www.habbaat.net',style: TextStyle(color: Colors.white,fontSize: 16,),),
+                ),
             ],
           ),
         ),

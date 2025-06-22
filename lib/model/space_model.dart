@@ -15,6 +15,8 @@ class Space {
   final List<SpaceUnit> spaceUnits;
   final double? latitude;
   final double? longitude;
+  final List<String> paymentMethods;
+  final List<String> features;
 
   Space({
     required this.id,
@@ -33,6 +35,8 @@ class Space {
     required this.spaceUnits,
     this.latitude,
     this.longitude,
+    this.paymentMethods = const [],
+    this.features = const [],
   });
 
   factory Space.fromJson(Map<String, dynamic> json) {
@@ -53,6 +57,8 @@ class Space {
       spaceUnits: (json['spaceUnits'] as List<dynamic>?)?.map((u) => SpaceUnit.fromJson(u)).toList() ?? [],
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
+      paymentMethods: (json['paymentMethods'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      features: (json['features'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
     );
   }
 
@@ -73,6 +79,8 @@ class Space {
     'spaceUnits': spaceUnits.map((e) => e.toJson()).toList(),
     'latitude': latitude,
     'longitude': longitude,
+    'paymentMethods': paymentMethods,
+    'features': features,
   };
 }
 

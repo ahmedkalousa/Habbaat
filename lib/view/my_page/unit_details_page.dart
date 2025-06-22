@@ -8,6 +8,7 @@ import 'package:work_spaces/model/space_units_model.dart';
 import 'package:work_spaces/provider/my_provider.dart';
 import 'package:work_spaces/provider/space_units_provider.dart';
 import 'package:work_spaces/util/constant.dart';
+import 'package:work_spaces/view/my_page/space_details_page.dart';
 
 class UnitDetailsPage extends StatefulWidget {
   static const id = '/HallDetailsPage';
@@ -192,7 +193,7 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> with TickerProviderSt
       child: SlideTransition(
         position: _slideAnimation,
         child: Container(
-          margin: EdgeInsets.all(16.w),
+          margin: EdgeInsets.only(left: 16.w, right: 16.w, top: 8.h, bottom: 16.h),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20.r),
@@ -285,7 +286,16 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> with TickerProviderSt
         ),
         child: Column(
           children: [
-            _infoRow(Icons.location_city, space.name, isTitle: true),
+            _infoRow(
+              Icons.location_city, 
+              space.name, 
+              isTitle: true ,
+              onTap: () => Navigator.pushNamed(
+                context,
+                SpaceDetailsPage.id,
+                arguments: {'spaceId': space.id},
+              ),
+            ),
             SizedBox(height: 12.h),
             _infoRow(Icons.location_on_outlined, space.location),
           ],
@@ -294,18 +304,21 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> with TickerProviderSt
     );
   }
 
-  Widget _infoRow(IconData icon, String text, {bool isTitle = false}) {
+  Widget _infoRow(IconData icon, String text, {bool isTitle = false, Function()? onTap}) {
     return Row(
       children: [
         Icon(icon, size: isTitle ? 20.sp : 18.sp, color: Colors.grey.shade600),
         SizedBox(width: 12.w),
         Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: isTitle ? 18.sp : 15.sp,
-              fontWeight: isTitle ? FontWeight.bold : FontWeight.w500,
-              color: isTitle ? Colors.black87 : Colors.grey.shade800,
+          child: GestureDetector(
+            onTap: onTap,
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: isTitle ? 18.sp : 15.sp,
+                fontWeight: isTitle ? FontWeight.bold : FontWeight.w500,
+                color: isTitle ? Colors.black87 : Colors.grey.shade800,
+              ),
             ),
           ),
         ),
