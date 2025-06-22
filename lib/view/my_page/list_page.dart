@@ -3,7 +3,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:work_spaces/util/constant.dart';
 import 'package:work_spaces/view/my_page/main_home_page.dart';
 import 'package:work_spaces/view/my_page/units_page.dart';
+import 'package:work_spaces/view/my_page/initiative_page.dart';
 import 'package:work_spaces/view/my_wedgit/my_social_media_icon.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 
 class ListPage extends StatefulWidget {
@@ -14,11 +16,23 @@ class ListPage extends StatefulWidget {
 }
 
 class _ListPageState extends State<ListPage> {
-  void openWebView(BuildContext context, String link) {
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(builder: (_) => WebViewPage(url: link)),
-    // );
+
+  // دالة مساعدة لفتح الروابط الخارجية
+  Future<void> _launchUrl(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('لا يمكن فتح الرابط: $urlString')),
+        );
+      }
+    } catch (e) {
+       ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ في فتح الرابط: $urlString')),
+        );
+    }
   }
 
   @override
@@ -91,6 +105,18 @@ class _ListPageState extends State<ListPage> {
                           color: primaryColor,
                         ),
                         _DrawerItem(
+                          icon: Icons.lightbulb,
+                          label: 'المبادرات',
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (context) {
+                                return mainHomePage(currentIndex: 2,);
+                              },
+                            ));
+                          },
+                          color: primaryColor,
+                        ),
+                        _DrawerItem(
                           icon: Icons.meeting_room,
                           label: 'القاعات',
                           onTap: () {
@@ -102,6 +128,7 @@ class _ListPageState extends State<ListPage> {
                           },
                           color: primaryColor,
                         ),
+                        
                         Spacer(),
                         Card(
                           color: primaryColor.withOpacity(0.6),
@@ -112,37 +139,37 @@ class _ListPageState extends State<ListPage> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                                   children: [
-                                    MySocialMediaIcon(iconData: FontAwesomeIcons.whatsapp,onTap: () 
-                                    {openWebView(context , 'https://wa.me/+970566970710');
-                                    },),
+                                    MySocialMediaIcon(iconData: FontAwesomeIcons.whatsapp,onTap: () {
+                                      _launchUrl('https://wa.me/+970566970710');
+                                    }),
                                     MySocialMediaIcon(iconData: FontAwesomeIcons.facebook,onTap: () {
-                                      openWebView(context , 'https://www.facebook.com/habbaatps');
-                                      },),
+                                      _launchUrl('https://www.facebook.com/habbaatps');
+                                    }),
                                     MySocialMediaIcon(iconData: FontAwesomeIcons.instagram,onTap: () {
-                                      openWebView(context , 'https://www.instagram.com/habbaat_ps');
-                                      },),
+                                      _launchUrl('https://www.instagram.com/habbaat_ps');
+                                    }),
                                     MySocialMediaIcon(iconData: FontAwesomeIcons.tiktok,onTap: () {
-                                      openWebView(context , 'https://www.tiktok.com/@habbaat_ps');
-                                      },),
+                                      _launchUrl('https://www.tiktok.com/@habbaat_ps');
+                                    }),
                                     MySocialMediaIcon(iconData: FontAwesomeIcons.twitter,onTap: () {
-                                      openWebView(context , 'https://www.twitter.com/habbaat');
-                                      },),
+                                      _launchUrl('https://www.twitter.com/habbaat');
+                                    }),
                                   ],
                                 ),
                                 SizedBox(height: 16,),
                                  InkWell(
-                                  onTap: () {},
+                                  onTap: () => _launchUrl('https://www.habbaat.net'),
                                   borderRadius: BorderRadius.circular(8),
                                   child: Row(
                                     children: [
-                                      Text(' عبر الموقع:', style: TextStyle(
+                                      Text(' أو عبر الموقع:', style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
                                         ), ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        'www.habaat.com',
+                                        'www.habbaat.net',
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,

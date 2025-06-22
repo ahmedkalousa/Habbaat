@@ -292,7 +292,11 @@ class _SpacesPageState extends State<SpacesPage> {
                             final space = filteredSpaces[index];
                             return MyMiniCard(
                               onTap: () {
-                                Navigator.pushNamed( context,SpaceDetailsPage.id, arguments: space);
+                                Navigator.pushNamed(
+                                  context,
+                                  SpaceDetailsPage.id, 
+                                  arguments: {'spaceId': space.id}
+                                );
                               },
                               imagePath: baseUrlImage + space.images[0].imageUrl,
                               title: space.name,

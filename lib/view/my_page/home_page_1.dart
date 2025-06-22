@@ -3,6 +3,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import 'package:work_spaces/provider/my_provider.dart';
 import 'package:work_spaces/provider/space_units_provider.dart';
 import 'package:work_spaces/util/constant.dart';
@@ -13,6 +14,7 @@ import 'package:work_spaces/view/my_wedgit/my_mini_card.dart';
 import 'package:work_spaces/view/my_wedgit/my_section_tile.dart';
 import 'package:work_spaces/view/my_page/units_page.dart';
 import 'package:work_spaces/view/my_page/search_results_page.dart';
+import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
 
 class HomePage extends StatefulWidget {
   static const String id = '/HomePage';
@@ -25,6 +27,49 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String searchText = '';
   TextEditingController _searchController = TextEditingController();
+  bool _isConnected = true; // متغير لتتبع حالة الاتصال
+  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkConnectivity(); // فحص الاتصال عند بدء الصفحة
+    _setupConnectivityListener(); // إعداد مراقب الاتصال
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel(); // إلغاء المراقب عند إغلاق الصفحة
+    super.dispose();
+  }
+
+  // إعداد مراقب تغييرات الاتصال
+  void _setupConnectivityListener() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      setState(() {
+        _isConnected = result != ConnectivityResult.none;
+      });
+      
+      // إظهار رسالة للمستخدم عند تغيير حالة الاتصال
+      if (!_isConnected) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم فقدان الاتصال بالإنترنت'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    });
+  }
+
+  // دالة فحص الاتصال بالإنترنت
+  Future<void> _checkConnectivity() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    setState(() {
+      _isConnected = connectivityResult != ConnectivityResult.none;
+    });
+  }
 
   void _goToSearchPage(BuildContext context, List spaces) {
     final query = _searchController.text.trim();
@@ -49,25 +94,63 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // دالة جديدة لتحديث البيانات يدوياً
   Future<void> _refreshData(BuildContext context) async {
+    await _checkConnectivity();
+    
+    if (!_isConnected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لا يوجد اتصال بالإنترنت. لا يمكن تحديث البيانات'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final spacesProvider = Provider.of<SpacesProvider>(context, listen: false);
     final unitsProvider = Provider.of<SpaceUnitsProvider>(context, listen: false);
     
-    await spacesProvider.fetchSpacesAndUnits(forceRefresh: true);
-    await unitsProvider.fetchSpacesAndUnits(forceRefresh: true);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('تم تحديث البيانات بنجاح'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    try {
+      await spacesProvider.fetchSpacesAndUnits(forceRefresh: true);
+      await unitsProvider.fetchSpacesAndUnits(forceRefresh: true);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تم تحديث البيانات بنجاح'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('حدث خطأ أثناء تحديث البيانات'),
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  @override
-  void initState() {
-    super.initState();
+  // دالة callback للتحديث مع فحص الاتصال
+  Future<void> _handleRefresh() async {
+    await _refreshData(context);
+  }
+
+  // دالة callback للتحديث مع فحص الاتصال
+  Future<void> _conditionalRefresh() async {
+    if (_isConnected) {
+      await _refreshData(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لا يوجد اتصال بالإنترنت. لا يمكن تحديث البيانات'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -100,11 +183,15 @@ class _HomePageState extends State<HomePage> {
             child: Scaffold(
               backgroundColor: Colors.transparent,
               extendBodyBehindAppBar: true,
-              body: RefreshIndicator(
-                onRefresh: () async {
-                  await _refreshData(context);
-                },
+              body: LiquidPullToRefresh(
+                height: 100.h,
+                onRefresh: _conditionalRefresh,
+                color: primaryColor,
+                backgroundColor: Colors.white,
+                animSpeedFactor: 2.0,
+                showChildOpacityTransition: false,
                 child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

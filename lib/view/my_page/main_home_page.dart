@@ -1,7 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:work_spaces/view/my_page/home_page_1.dart';
 import 'package:work_spaces/util/constant.dart';
+import 'package:work_spaces/view/my_page/initiative_page.dart';
 import 'package:work_spaces/view/my_page/list_page.dart';
 import 'package:work_spaces/view/my_page/spaces_page.dart';
 
@@ -21,6 +21,7 @@ class _mainHomePageState extends State<mainHomePage> {
   List<Widget> screensList = [
     const HomePage(),
     const SpacesPage(),
+    const InitiativePage(),
     const ListPage(),
   ];
 
@@ -35,31 +36,43 @@ class _mainHomePageState extends State<mainHomePage> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        bottomNavigationBar: Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(50),
-            child: BottomNavigationBar(
-              backgroundColor: primaryColor,
-              onTap: (value) {
-                setState(() {
-                  currentIndex = value;
-                });
-              },
-              currentIndex: currentIndex,
-              elevation: 0,
-              selectedFontSize: 16,
-              unselectedIconTheme: const IconThemeData(color: Colors.white),
-              selectedItemColor: primaryColor1,
-              unselectedItemColor: Colors.white,
-              selectedLabelStyle: TextStyle(color: primaryColor1),
-              unselectedLabelStyle:
-                  const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              items: const [
-                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
-                BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'المساحات'),
-                BottomNavigationBarItem(icon: Icon(Icons.list), label: 'القائمة'),
-              ],
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 10),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: BottomNavigationBar(
+                backgroundColor: primaryColor,
+                type: BottomNavigationBarType.fixed,
+                onTap: (value) {
+                  setState(() {
+                    currentIndex = value;
+                  });
+                },
+                currentIndex: currentIndex,
+                elevation: 0,
+                selectedItemColor: Colors.white,
+                unselectedItemColor: Colors.white.withOpacity(0.7),
+                selectedLabelStyle: 
+                const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                unselectedLabelStyle: 
+                const TextStyle(fontWeight: FontWeight.normal, fontSize: 12),
+                items: const [
+                  BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
+                  BottomNavigationBarItem(icon: Icon(Icons.location_city), label: 'المساحات'),
+                  BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'المبادرات'),
+                  BottomNavigationBarItem(icon: Icon(Icons.list), label: 'القائمة'),
+                ],
+              ),
             ),
           ),
         ),
@@ -69,63 +82,3 @@ class _mainHomePageState extends State<mainHomePage> {
     );
   }
 }
-
-
-// class mainHomePage extends StatefulWidget {
-//   static const id = '/mainHomePage';
-//   int currentIndex = 0;
-
-//    mainHomePage({super.key , currentIndex});
-
-//   @override
-//   State<mainHomePage> createState() => _mainHomePageState();
-// }
-
-// class _mainHomePageState extends State<mainHomePage>
-//     with SingleTickerProviderStateMixin {
-
-//   List<Widget?> screensList = [
-//     const HomePage(),
-//     const SpacesPage(),
-//     const ListPage()
-//   ];
-
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Directionality(
-//       textDirection: TextDirection.rtl,
-//       child: Scaffold(
-//         bottomNavigationBar: Padding(
-//         padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-//           child: ClipRRect(
-//              borderRadius: BorderRadius.circular(50),
-//              child: BottomNavigationBar(  
-//               backgroundColor: primaryColor,
-//               onTap: (value) {
-//                 setState(() {
-//                   widget.currentIndex = value;
-//                 });
-//               },
-//               currentIndex: widget.currentIndex,
-//               elevation: 0,
-//               selectedFontSize: 16,
-//               unselectedIconTheme: IconThemeData(color: Colors.white),
-//               selectedItemColor: primaryColor1,
-//               unselectedItemColor: Colors.white,
-//               selectedLabelStyle: TextStyle(color: primaryColor1),
-//               unselectedLabelStyle:
-//                    TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-//              items: const [
-//               BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
-//               BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'المساحات'),
-//               BottomNavigationBarItem(icon: Icon(Icons.list), label: 'القائمة'),
-//             ], ),
-//           ),
-//         ),
-//         body: screensList[widget.currentIndex],
-//         extendBody: true,
-//       ),
-//     );
-//   }
-// }

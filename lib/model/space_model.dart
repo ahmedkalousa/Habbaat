@@ -5,11 +5,16 @@ class Space {
   final String location;
   final String bio;
   final String contactNumber;
+  final String? whatsAppNumber;
+  final String? startTime;
+  final String? endTime;
   final double rating;
   final DateTime createdAt;
   final List<SpaceImage> images;
   final List<SocialLink> socialLinks;
   final List<SpaceUnit> spaceUnits;
+  final double? latitude;
+  final double? longitude;
 
   Space({
     required this.id,
@@ -18,11 +23,16 @@ class Space {
     required this.location,
     required this.bio,
     required this.contactNumber,
+    this.whatsAppNumber,
+    this.startTime,
+    this.endTime,
     required this.rating,
     required this.createdAt,
     required this.images,
     required this.socialLinks,
     required this.spaceUnits,
+    this.latitude,
+    this.longitude,
   });
 
   factory Space.fromJson(Map<String, dynamic> json) {
@@ -33,11 +43,16 @@ class Space {
       location: json['location'] ?? '',
       bio: json['bio'] ?? '',
       contactNumber: json['contactNumber'] ?? '',
+      whatsAppNumber: json['whatsAppNumber'],
+      startTime: json['startTime'],
+      endTime: json['endTime'],
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
       images: (json['images'] as List<dynamic>?)?.map((img) => SpaceImage.fromJson(img)).toList() ?? [],
       socialLinks: (json['socialLinks'] as List<dynamic>?)?.map((s) => SocialLink.fromJson(s)).toList() ?? [],
       spaceUnits: (json['spaceUnits'] as List<dynamic>?)?.map((u) => SpaceUnit.fromJson(u)).toList() ?? [],
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
   }
 
@@ -48,11 +63,16 @@ class Space {
     'location': location,
     'bio': bio,
     'contactNumber': contactNumber,
+    'whatsAppNumber': whatsAppNumber,
+    'startTime': startTime,
+    'endTime': endTime,
     'rating': rating,
     'createdAt': createdAt.toIso8601String(),
     'images': images.map((e) => e.toJson()).toList(),
     'socialLinks': socialLinks.map((e) => e.toJson()).toList(),
     'spaceUnits': spaceUnits.map((e) => e.toJson()).toList(),
+    'latitude': latitude,
+    'longitude': longitude,
   };
 }
 

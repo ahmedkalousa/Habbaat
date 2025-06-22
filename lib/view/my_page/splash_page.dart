@@ -35,7 +35,7 @@ class _splashPageState extends State<splashPage> {
                 height: 200,
                 width: 200,
                 child: Image.asset('images/logo-white.png')),
-                Text('www.habaat.net',style: TextStyle(color: Colors.white,fontSize: 16,fontWeight: FontWeight.bold),)
+                Text('www.habbaat.net',style: TextStyle(color: Colors.white,fontSize: 16,fontWeight: FontWeight.bold),)
             ],
           ),
         ),

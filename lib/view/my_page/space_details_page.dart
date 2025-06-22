@@ -1,14 +1,19 @@
+import 'dart:math';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:work_spaces/util/constant.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:work_spaces/view/my_page/unit_details_page.dart';
 import 'package:work_spaces/view/my_wedgit/my_contact_icon.dart';
+import 'package:work_spaces/view/my_wedgit/my_map_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:work_spaces/provider/my_provider.dart';
 import 'package:work_spaces/model/space_model.dart';
-import 'package:work_spaces/view/my_wedgit/my_mini_card.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:work_spaces/view/my_wedgit/my_state_card.dart';
 
 class SpaceDetailsPage extends StatefulWidget {
   static const id = '/SpaceDetailsPage';
@@ -18,316 +23,680 @@ class SpaceDetailsPage extends StatefulWidget {
   State<SpaceDetailsPage> createState() => _SpaceDetailsPageState();
 }
 
-class _SpaceDetailsPageState extends State<SpaceDetailsPage> {
-
-  late final PageController _pageController;
-  int _currentPage = 0;
+class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProviderStateMixin{
+ late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  bool showBackButton = true;
+  late ScrollController _scrollController;
 
   @override
+  
+  
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic));
+    
+    _fadeController.forward();
+    _slideController.forward();
+    _scrollController = ScrollController();
+    _scrollController.addListener(() {
+      if (_scrollController.offset > 60 && showBackButton) {
+        setState(() => showBackButton = false);
+      } else if (_scrollController.offset <= 60 && !showBackButton) {
+        setState(() => showBackButton = true);
+      }
+    });
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _fadeController.dispose();
+    _slideController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final routeArgs = ModalRoute.of(context)?.settings.arguments;
-    Space? space;
-    int? spaceId;
-
-    if (routeArgs is Space) {
-      space = routeArgs;
-      spaceId = space.id;
-    } else if (routeArgs is Map && routeArgs['spaceId'] != null) {
-      spaceId = routeArgs['spaceId'] as int;
-      final spaces = Provider.of<SpacesProvider>(context).spaces;
-      try {
-        space = spaces.firstWhere((s) => s.id == spaceId);
-      } catch (_) {
-        space = null;
-      }
-    }
-
-    if (spaceId == null || space == null) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map?;
+    final int? spaceId = args != null && args['spaceId'] != null ? args['spaceId'] as int : null;
+    
+    final spacesProvider = Provider.of<SpacesProvider>(context, listen: false);
+    
+    if (spaceId == null) {
       return Scaffold(
-        backgroundColor: Colors.white,
-        body: const Center(child: Text('لم يتم العثور على المساحة المطلوبة')),
+        backgroundColor: const Color(0xFFF7F8FA),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 80.sp, color: Colors.grey.shade400),
+              SizedBox(height: 16.h),
+              Text(
+                'معرف المساحة غير صالح',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // البحث عن المساحة بواسطة ID
+    final space = spacesProvider.spaces.where((s) => s.id == spaceId).firstOrNull;
+    
+    if (space == null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7F8FA),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.space_dashboard, size: 80.sp, color: Colors.grey.shade400),
+              SizedBox(height: 16.h),
+              Text(
+                'لم يتم العثور على المساحة المطلوبة',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
-    // 1. سلايد شو صور المساحة
-    final List<String> images = space.images.isNotEmpty
-        ? space.images.map((img) => baseUrlImage + img.imageUrl).toList()
-        : ['images/1.jpeg'];
+    final coverImage = space.images.isNotEmpty
+        ? baseUrlImage + space.images.first.imageUrl
+        : 'https://via.placeholder.com/400x300';
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // السلايد شو (يبقى كما هو)
-              SizedBox(
-                height: 240,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: images.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentPage = index;
-                    });
-                  },
-                  itemBuilder: (context, index) {
-                    final img = images[index];
-                    return ClipRRect(
-                   
-                      child: img.startsWith('http')
-                          ? CachedNetworkImage(
-                              imageUrl: img,
-                              cacheKey: img,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              fadeInDuration: Duration(milliseconds: 300),
-                              fadeOutDuration: Duration(milliseconds: 300),
-                              maxWidthDiskCache: 800,
-                              maxHeightDiskCache: 480,
-                              placeholder: (context, url) => Container(
-                                width: double.infinity,
-                                height: 240,
-                                color: Colors.grey[300],
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+        backgroundColor: const Color(0xFFF7F8FA),
+        body: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 320.h,
+              backgroundColor: const Color(0xFFF7F8FA),
+              elevation: 0,
+              pinned: false,
+              floating: true,
+              snap: true,
+              stretch: true,
+              automaticallyImplyLeading: false,
+              iconTheme: const IconThemeData(color: Colors.white),
+              systemOverlayStyle: SystemUiOverlayStyle.light,
+              flexibleSpace: FlexibleSpaceBar(
+                stretchModes: const [StretchMode.zoomBackground],
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CachedNetworkImage(
+                      imageUrl: coverImage,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              primaryColor.withOpacity(0.8),
+                              primaryColor1.withOpacity(0.9),
+                            ],
+                          ),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              primaryColor.withOpacity(0.8),
+                              primaryColor1.withOpacity(0.9),
+                            ],
+                          ),
+                        ),
+                        child: const Icon(Icons.error, color: Colors.white, size: 50),
+                      ),
+                    ),
+                    // Gradient overlay
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.3),
+                            Colors.black.withOpacity(0.6),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (showBackButton)
+                      Positioned(
+                        top: MediaQuery.of(context).padding.top + 8,
+                        right: 16,
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: EdgeInsets.all(8.w),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: Colors.white,
+                              size: 20.sp,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            SliverList(
+              delegate: SliverChildListDelegate(
+                [
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: Container(
+                        margin: EdgeInsets.all(16.w),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            // Header with gradient
+                            Container(
+                              padding: EdgeInsets.all(20.w),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    primaryColor.withOpacity(0.1),
+                                    primaryColor1.withOpacity(0.05),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: EdgeInsets.all(8.w),
+                                        decoration: BoxDecoration(
+                                          color: primaryColor.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(12.r),
+                                        ),
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.lightbulb,
+                                            color: primaryColor,
+                                            size: 24.sp,
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: 12.w),
+                                      Expanded(
+                                        child: Text(
+                                          space.name,
+                                          style: TextStyle(
+                                            color: Colors.black87,
+                                            fontSize: 28.sp,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 16.h),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: StatCard(
+                                          value: space.rating.toString(),
+                                          label: 'التقييم',
+                                          icon: Icons.star_rounded,
+                                          color: Colors.amber.shade400,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8.w),
+                                      Expanded(
+                                        child: StatCard(
+                                          value: space.governorate,
+                                          label: 'المحافظة',
+                                          icon: Icons.map_rounded,
+                                          color: primaryColor,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8.w),
+                                      Expanded(
+                                        child: StatCard(
+                                          value: space.spaceUnits.length.toString(),
+                                          label: 'الوحدات',
+                                          icon: Icons.business_rounded,
+                                          color: Colors.green.shade400,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (space.startTime != null && space.endTime != null)
+                                    Padding(
+                                      padding: EdgeInsets.only(top: 16.h),
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.8),
+                                          borderRadius: BorderRadius.circular(12.r),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(Icons.access_time_filled, color: primaryColor, size: 22.sp),
+                                                SizedBox(width: 2.w),
+                                                Text(
+                                                  'أوقات العمل',
+                                                  style: TextStyle(
+                                                    fontSize: 15.sp,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Text(
+                                              '${_formatTime(space.startTime!)} - ${_formatTime(space.endTime!)}',
+                                              textDirection: TextDirection.ltr,
+                                              textAlign: TextAlign.end,
+                                              style: TextStyle(
+                                                fontSize: 15.sp,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.grey.shade800,
+                                                fontFamily: 'Roboto',
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            // Content
+                            Padding(
+                              padding: EdgeInsets.all(20.w),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 4.w,
+                                        height: 24.h,
+                                        decoration: BoxDecoration(
+                                          color: primaryColor,
+                                          borderRadius: BorderRadius.circular(2.r),
+                                        ),
+                                      ),
+                                      SizedBox(width: 12.w),
+                                      Text(
+                                        'عن المساحة',
+                                        style: TextStyle(
+                                          color: Colors.black87,
+                                          fontSize: 22.sp,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: EdgeInsets.all(16.w),
+                                    child: Text(
+                                      space.bio,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontSize: 15.sp,
+                                        height: 1.7,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: 24.h),
+                                  // Map section
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade50,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: Colors.grey.shade100, width: 1),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.map, size: 22),
+                                            const SizedBox(width: 10),
+                                            const Text(
+                                              'موقع المساحة',
+                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: 8.h),
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Icon(Icons.location_on_outlined, size: 16.sp,),
+                                            SizedBox(width: 5.w),
+                                            Expanded(
+                                              child: Text(
+                                                space.location,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w500),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: 8.h),
+                                        MyMapWidget(
+                                          latitude: space.latitude ??31.5145,
+                                          longitude: space.longitude ?? 34.4453,
+                                          spaceName: space.name,
+                                          spaceLocation: space.location,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: 24.h),
+                                  if (space.socialLinks.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: primaryColor.withOpacity(0.10),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: primaryColor.withOpacity(0.18)),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                         
+                                          ..._buildSocialIcons(space.socialLinks, context),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // Units gallery section
+                               ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 180.h,
+                    child: space.spaceUnits.isEmpty
+                        ? Center(
+                            child: Container(
+                              padding: EdgeInsets.all(20.w),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16.r),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.photo_library_outlined,
+                                    size: 48.sp,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  SizedBox(height: 12.h),
+                                  Text(
+                                    'لا توجد وحدات لعرضها',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 16.sp,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: EdgeInsets.symmetric(horizontal: 20.w),
+                            itemCount: space.spaceUnits.length,
+                            itemBuilder: (context, index) {
+                              final unit = space.spaceUnits[index];
+                              final unitImage = unit.imageUrl.isNotEmpty
+                                  ? baseUrlImage + unit.imageUrl
+                                  : 'https://via.placeholder.com/200x150';
+      
+                              return 
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context, 
+                                    MaterialPageRoute(
+                                      builder: (context) => UnitDetailsPage(),
+                                      settings: RouteSettings(
+                                        arguments: {'unitId': unit.id},
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  width: 200.w,
+                                  margin: EdgeInsetsDirectional.only(end: 16.w),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16.r),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16.r),
+                                    child: Stack(
+                                      children: [
+                                        CachedNetworkImage(
+                                          imageUrl: unitImage,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          placeholder: (context, url) => Container(
+                                            color: Colors.grey.shade200,
+                                            child: Center(
+                                              child: CircularProgressIndicator(
+                                                color: primaryColor,
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          bottom: 0,
+                                          left: 0,
+                                          right: 0,
+                                          child: Container(
+                                            padding: EdgeInsets.all(12.w),
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                                colors: [
+                                                  Colors.transparent,
+                                                  Colors.black.withOpacity(0.7),
+                                                ],
+                                              ),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  unit.name,
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14.sp,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  unit.unitCategoryName,
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 12.sp,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                width: double.infinity,
-                                height: 240,
-                                color: Colors.grey[300],
-                                child: Icon(Icons.error, color: Colors.red),
-                              ),
-                            )
-                          : Image.asset(img, fit: BoxFit.cover, width: double.infinity),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(images.length, (index) {
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: _currentPage == index ? 16 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: _currentPage == index ? Colors.blue : Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  );
-                }),
-              ),
-              // معلومات المساحة الرئيسية
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.grey.shade200, width: 1),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              space.name,
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                            ),
+                              );
+                            },
                           ),
-                          // تقييم النجوم
-                          Row(
-                            children: List.generate(5, (i) {
-                              double rating = space!.rating;
-                              if (i < rating.floor()) {
-                                return const Icon(Icons.star, color: Colors.amber, size: 22);
-                              } else if (i < rating && rating - i >= 0.5) {
-                                return const Icon(Icons.star_half, color: Colors.amber, size: 22);
-                              } else {
-                                return const Icon(Icons.star_border, color: Colors.amber, size: 22);
-                              }
-                            }),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.location_on, color: Colors.blueGrey, size: 22),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              space.location,
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.phone, color: Colors.green, size: 22),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(space.contactNumber, style: const TextStyle(fontSize: 15)),
-                        ],
-                      ),
-                    ],
                   ),
-                ),
+                  SizedBox(height: 20.h),
+                ],
               ),
-              // وصف المساحة
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 16),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.grey.shade100, width: 1),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.info_outline, size: 22),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          space.bio,
-                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, height: 1.5),
-                          textAlign: TextAlign.start,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // جهات التواصل
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: primaryColor.withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: primaryColor.withOpacity(0.18)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      // نص تواصل معنا
-                      const Text(
-                        'تواصل معنا:',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      ContactIcon(
-                        icon: FontAwesomeIcons.whatsapp,
-                        color: Colors.green,
-                        onTap: () {},
-                      ),
-                      const SizedBox(width: 8),
-                      ContactIcon(
-                        icon: Icons.facebook,
-                        color: Colors.blue[800]!,
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // قائمة الوحدات
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0 , vertical: 8.0),
-                child: Text(
-                  
-                  'الوحدات المتوفرة:',
-                  textDirection: TextDirection.rtl,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (space.spaceUnits.isEmpty)
-                const Center(child: Text('لا توجد وحدات متاحة'))
-              else
-                GridView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                  itemCount: space.spaceUnits.length,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.7,
-                    crossAxisSpacing: 10.w,
-                    mainAxisSpacing: 10.h,
-                  ),
-                  itemBuilder: (context, index) {
-                    final unit = space?.spaceUnits[index];
-                    String? imageUrl;
-                    try {
-                      imageUrl = (unit as dynamic).imageUrl;
-                    } catch (_) {
-                      imageUrl = null;
-                    }
-                    return MyMiniCard(
-                      imagePath: imageUrl != null && imageUrl.isNotEmpty
-                          ? baseUrlImage + imageUrl
-                          : 'images/1.jpeg',
-                      title: unit!.name,
-                      subtitle: space!.location,
-                      onTap: () {
-                        Navigator.pushNamed(context, UnitDetailsPage.id, arguments: {'unitId': unit.id});
-                      },
-                    );
-                  },
-                ),
-              SizedBox(height: 40.h),
-            ],
-          ),
+            )
+          ],
         ),
       ),
     );
   }
+    // دالة مساعدة لتنسيق الوقت
+  String _formatTime(String time) {
+    try {
+      final parts = time.split(':');
+      if (parts.length >= 2) {
+        int hour = int.parse(parts[0]);
+        final String minute = parts[1];
+        String period = 'AM';
+
+        if (hour >= 12) {
+          period = 'PM';
+        }
+        if (hour == 0) {
+          hour = 12;
+        } else if (hour > 12) {
+          hour -= 12;
+        }
+        return '$hour:$minute $period';
+      }
+      return time;
+    } catch (e) {
+      return time;
+    }
+  }
+
+    // دالة مساعدة لبناء أيقونات التواصل الاجتماعي
+  List<Widget> _buildSocialIcons(List<SocialLink> links, BuildContext context) {
+    final Map<String, Map<String, dynamic>> iconMapping = {
+      'facebook': {'icon': FontAwesomeIcons.facebook, 'color': Colors.blue[800]!},
+      'instagram': {'icon': FontAwesomeIcons.instagram, 'color': Colors.pink},
+      'twitter': {'icon': FontAwesomeIcons.twitter, 'color': Colors.lightBlue},
+      'tiktok': {'icon': FontAwesomeIcons.tiktok, 'color': Colors.black},
+      'whatsapp': {'icon': FontAwesomeIcons.whatsapp, 'color': Colors.green},
+    };
+
+    return links.map((link) {
+      final platform = link.platform.toLowerCase();
+      if (iconMapping.containsKey(platform)) {
+        final iconData = iconMapping[platform]!;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: ContactIcon(
+            icon: iconData['icon'],
+            color: iconData['color'],
+            onTap: () async {
+              final Uri url = Uri.parse(link.url);
+              try {
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('لا يمكن فتح الرابط: ${link.url}')),
+                  );
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('خطأ في فتح الرابط: ${link.url}')),
+                );
+              }
+            },
+          ),
+        );
+      }
+      return const SizedBox.shrink(); // تجاهل المنصات غير المعروفة
+    }).toList();
+  }
+
+
 }
