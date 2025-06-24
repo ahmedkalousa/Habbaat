@@ -4,16 +4,15 @@ import 'package:flutter/services.dart';
 import 'package:work_spaces/util/constant.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:work_spaces/view/my_page/unit_details_page.dart';
-import 'package:work_spaces/view/my_wedgit/my_contact_icon.dart';
 import 'package:work_spaces/view/my_wedgit/my_map_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:work_spaces/provider/my_provider.dart';
 import 'package:work_spaces/model/space_model.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:work_spaces/view/my_wedgit/my_state_card.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:readmore/readmore.dart';
+import 'package:work_spaces/view/my_wedgit/my_state_card.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SpaceDetailsPage extends StatefulWidget {
   static const id = '/SpaceDetailsPage';
@@ -691,25 +690,51 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
                                     ),
                                   ),
                                   SizedBox(height: 24.h),
-                                  if (space.socialLinks.isNotEmpty)
+                                  // قسم معلومات التواصل
                                   Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16),
                                     child: Container(
+                                      width: double.infinity,
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
                                         color: primaryColor.withOpacity(0.10),
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(color: primaryColor.withOpacity(0.18)),
                                       ),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                      child: Column(
                                         children: [
-                                         
-                                          ..._buildSocialIcons(space.socialLinks, context),
+                                          Row(
+                                          children: [
+                                          
+                                            GestureDetector(
+                                              onTap: () async {
+                                                final Uri phoneUri = Uri(scheme: 'tel', path: space.contactNumber);
+                                                if (await canLaunchUrl(phoneUri)) {
+                                                  await launchUrl(phoneUri);
+                                                }
+                                              },
+                                              child: Text(
+                                                space.contactNumber,
+                                                style: TextStyle(
+                                                  fontSize: 15.sp,
+                                                  color: Colors.blue.shade700,
+                                                  decoration: TextDecoration.underline,
+                                                ),
+                                              ),
+                                            ),
+                                          ],),
+                                          
+                                          SizedBox(height: 12.h),
+                                          // أيقونات التواصل
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: _buildContactIcons(space, context),
+                                          ),
                                         ],
                                       ),
                                     ),
                                   ),
+                          
                              ],
                               ),
                             ),
@@ -891,28 +916,28 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
     }
   }
 
-    // دالة مساعدة لبناء أيقونات التواصل الاجتماعي
-  List<Widget> _buildSocialIcons(List<SocialLink> links, BuildContext context) {
+  List<Widget> _buildContactIcons(Space space, BuildContext context) {
+    final List<Widget> icons = [];
     final Map<String, Map<String, dynamic>> iconMapping = {
       'facebook': {'icon': FontAwesomeIcons.facebook, 'color': Colors.blue[800]!},
       'instagram': {'icon': FontAwesomeIcons.instagram, 'color': Colors.pink},
       'twitter': {'icon': FontAwesomeIcons.twitter, 'color': Colors.lightBlue},
       'tiktok': {'icon': FontAwesomeIcons.tiktok, 'color': Colors.black},
-      'whatsapp': {'icon': FontAwesomeIcons.whatsapp, 'color': Colors.green},
     };
-
-    return links.map((link) {
+    // social links
+    for (final link in space.socialLinks) {
       final platform = link.platform.toLowerCase();
       if (iconMapping.containsKey(platform)) {
         final iconData = iconMapping[platform]!;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: ContactIcon(
-            icon: iconData['icon'],
-            color: iconData['color'],
-            onTap: () async {
-              final Uri url = Uri.parse(link.url);
-              try {
+        icons.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(50),
+              onTap: () async {
+                print('تم الضغط على أيقونة $platform: ${link.url}');
+                final url = Uri.parse(link.url.startsWith('http') ? link.url : 'https://${link.url}');
+                print(url);
                 if (await canLaunchUrl(url)) {
                   await launchUrl(url, mode: LaunchMode.externalApplication);
                 } else {
@@ -920,17 +945,66 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
                     SnackBar(content: Text('لا يمكن فتح الرابط: ${link.url}')),
                   );
                 }
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('خطأ في فتح الرابط: ${link.url}')),
-                );
-              }
-            },
+              },
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: iconData['color'].withOpacity(0.13),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(iconData['icon'], color: iconData['color'], size: 22),
+              ),
+            ),
           ),
         );
       }
-      return const SizedBox.shrink(); // تجاهل المنصات غير المعروفة
-    }).toList();
+    }
+    // whatsapp
+    if (space.whatsAppNumber != null && space.whatsAppNumber!.isNotEmpty) {
+      final String phone = space.whatsAppNumber!.replaceAll('+', '').replaceAll(' ', '');
+      icons.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(50),
+            onTap: () async {
+              print('تم الضغط على أيقونة واتساب: $phone');
+              final Uri url = Uri.parse('https://wa.me/$phone');
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('لا يمكن فتح الواتساب')),
+                );
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withOpacity(0.13),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(FontAwesomeIcons.whatsapp, color: Colors.green, size: 22),
+            ),
+          ),
+        ),
+      );
+    }
+    return icons;
   }
 
 }

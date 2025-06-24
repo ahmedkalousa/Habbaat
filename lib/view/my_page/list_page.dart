@@ -4,8 +4,6 @@ import 'package:work_spaces/util/constant.dart';
 import 'package:work_spaces/view/my_page/main_home_page.dart';
 import 'package:work_spaces/view/my_page/units_page.dart';
 import 'package:work_spaces/view/my_page/map_page.dart';
-import 'package:work_spaces/view/my_wedgit/my_social_media_icon.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 
 class ListPage extends StatefulWidget {
@@ -16,24 +14,6 @@ class ListPage extends StatefulWidget {
 }
 
 class _ListPageState extends State<ListPage> {
-
-  // دالة مساعدة لفتح الروابط الخارجية
-  Future<void> _launchUrl(String urlString) async {
-    final Uri url = Uri.parse(urlString);
-    try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('لا يمكن فتح الرابط: $urlString')),
-        );
-      }
-    } catch (e) {
-       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ في فتح الرابط: $urlString')),
-        );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,52 +116,7 @@ class _ListPageState extends State<ListPage> {
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
                               children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                  children: [
-                                    MySocialMediaIcon(iconData: FontAwesomeIcons.whatsapp,onTap: () {
-                                      _launchUrl('https://wa.me/+970566970710');
-                                    }),
-                                    MySocialMediaIcon(iconData: FontAwesomeIcons.facebook,onTap: () {
-                                      _launchUrl('https://www.facebook.com/habbaatps');
-                                    }),
-                                    MySocialMediaIcon(iconData: FontAwesomeIcons.instagram,onTap: () {
-                                      _launchUrl('https://www.instagram.com/habbaat_ps');
-                                    }),
-                                    MySocialMediaIcon(iconData: FontAwesomeIcons.tiktok,onTap: () {
-                                      _launchUrl('https://www.tiktok.com/@habbaat_ps');
-                                    }),
-                                    MySocialMediaIcon(iconData: FontAwesomeIcons.twitter,onTap: () {
-                                      _launchUrl('https://www.twitter.com/habbaat');
-                                    }),
-                                  ],
-                                ),
-                                SizedBox(height: 16,),
-                                 InkWell(
-                                  onTap: () => _launchUrl('https://www.habbaat.net'),
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Row(
-                                    children: [
-                                      Text(' أو عبر الموقع:', style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ), ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        'www.habbaat.net',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      SizedBox(width: 6,),
-                                      Icon(Icons.language, color: Colors.white, size: 22),
-                    
-                                    ],
-                                  ),
-                                ),
+                                // احذف أي صف أو عمود أو Padding أو Row أو GestureDetector أو Text أو أي عنصر يعرض أو يتعامل مع بيانات تواصل (MySocialMediaIcon، روابط، إلخ)
                               ],
                             ),
                           ),

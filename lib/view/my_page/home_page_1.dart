@@ -159,7 +159,6 @@ class _HomePageState extends State<HomePage> {
     return ScreenUtilInit(
       designSize: const Size(375, 812),
       minTextAdapt: true,
-      splitScreenMode: true,
       builder: (context, child) {
         return Consumer<SpacesProvider>(
       builder: ( context, provider, child) {  

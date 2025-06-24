@@ -22,30 +22,35 @@ class _splashPageState extends State<splashPage> {
         },
       ));
     });
-    return Scaffold(
-      
-      backgroundColor: primaryColor,
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SizedBox(height: 10.h),
-              Center(
-                child: SizedBox(
-                  height: 200.h,
-                  width: 200.w,
-                  child: Image.asset('images/logo-white.png')),
+    return ScreenUtilInit(
+      designSize: const Size(375, 812),
+      minTextAdapt: true,
+      builder: (context, child) {
+        return Scaffold(
+          backgroundColor: primaryColor,
+          body: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SizedBox(height: 10.h),
+                  Center(
+                    child: SizedBox(
+                      height: 200.h,
+                      width: 200.w,
+                      child: Image.asset('images/logo-white.png')),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 24.0),
+                    child: Text('www.habbaat.net',style: TextStyle(color: Colors.white,fontSize: 16,),),
+                  ),
+                ],
               ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 24.0),
-                  child: Text('www.habbaat.net',style: TextStyle(color: Colors.white,fontSize: 16,),),
-                ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

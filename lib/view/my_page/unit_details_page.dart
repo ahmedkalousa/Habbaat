@@ -385,29 +385,15 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> with TickerProviderSt
             style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: '${opt.price} ',
-                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: primaryColor),
-                ),
-                TextSpan(
-                  text: opt.currency,
-                  style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade600),
-                ),
-              ],
-            ),
-            textAlign: TextAlign.center,
+          Text(
+            '${opt.price} ',
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: primaryColor),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.credit_card, color: Colors.blueAccent, size: 22.sp),
-              SizedBox(width: 8.w),
-              Icon(Icons.paid, color: Colors.green, size: 22.sp),
-            ],
+          Text(
+           opt.currency,
+            style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade600),
           ),
+         
         ],
       ),
     );
