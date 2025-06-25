@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:work_spaces/provider/my_provider.dart';
 import 'package:work_spaces/view/my_page/space_details_page.dart';
+import 'dart:io';
 
 class MyMapWidget extends StatefulWidget {
   final double? latitude;
@@ -48,15 +49,22 @@ class _MyMapWidgetState extends State<MyMapWidget> {
   }
 
   void _setupConnectivityListener() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) async {
       print('Connectivity changed: $result');
-      final isOnline = result != ConnectivityResult.none;
-      
+      bool isOnline = result != ConnectivityResult.none;
+      if (isOnline) {
+        // تحقق من وجود إنترنت فعلي
+        try {
+          final lookup = await InternetAddress.lookup('google.com');
+          isOnline = lookup.isNotEmpty && lookup[0].rawAddress.isNotEmpty;
+        } catch (_) {
+          isOnline = false;
+        }
+      }
       if (_isOnline != isOnline) {
         setState(() {
           _isOnline = isOnline;
         });
-        
         if (isOnline) {
           _createMarkers();
         }
@@ -67,16 +75,22 @@ class _MyMapWidgetState extends State<MyMapWidget> {
   Future<void> _checkInternetConnection() async {
     print('Checking internet connection...');
     try {
+      // تحقق من وجود إنترنت فعلي
       final connectivityResult = await Connectivity().checkConnectivity();
-      print('Connectivity result: $connectivityResult');
-      
+      bool isOnline = connectivityResult != ConnectivityResult.none;
+      if (isOnline) {
+        try {
+          final result = await InternetAddress.lookup('google.com');
+          isOnline = result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+        } catch (_) {
+          isOnline = false;
+        }
+      }
       setState(() {
-        _isOnline = connectivityResult != ConnectivityResult.none;
+        _isOnline = isOnline;
         _isCheckingConnection = false;
       });
-      
       print('Is online: $_isOnline');
-      
       if (_isOnline) {
         _createMarkers();
       }
@@ -244,41 +258,10 @@ class _MyMapWidgetState extends State<MyMapWidget> {
 
   @override
   Widget build(BuildContext context) {
-    print('Building map widget - isChecking: $_isCheckingConnection, isOnline: $_isOnline');
     final double mapHeight = widget.isFullScreen ? MediaQuery.of(context).size.height : 200.h;
-    
-    // إذا كان يفحص الاتصال
-    if (_isCheckingConnection) {
-      print('Showing loading state');
-      return Container(
-        height: mapHeight,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
-        ),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 8),
-              Text(
-                'جاري فحص الاتصال...',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
 
-    // إذا لم يكن متصل بالإنترنت
-    if (!_isOnline) {
-      print('Showing offline state');
+    // إذا لم يوجد إنترنت فعلي أو ما زال يتم فحص الاتصال، اعرض رسالة فقط
+    if (!_isOnline || _isCheckingConnection) {
       return Container(
         height: mapHeight,
         decoration: BoxDecoration(
@@ -290,35 +273,12 @@ class _MyMapWidgetState extends State<MyMapWidget> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.wifi_off,
-                size: 48,
-                color: Colors.grey,
-              ),
+              const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
               const SizedBox(height: 8),
-              const Text(
-                'لا يوجد اتصال بالإنترنت',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const Text('لا يوجد اتصال بالإنترنت', style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              const Text(
-                'تحتاج إلى اتصال بالإنترنت',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                ),
-              ),
-              const Text(
-                'لمشاهدة موقع المساحة على الخريطة',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                ),
-              ),
+              const Text('تحتاج إلى اتصال بالإنترنت', style: TextStyle(color: Colors.grey, fontSize: 14)),
+              const Text('لمشاهدة موقع المساحة على الخريطة', style: TextStyle(color: Colors.grey, fontSize: 14)),
             ],
           ),
         ),
@@ -369,7 +329,7 @@ class _MyMapWidgetState extends State<MyMapWidget> {
     // جلب المساحات من المزود
     final spacesProvider = Provider.of<SpacesProvider>(context, listen: false);
     final List<Map<String, dynamic>> exampleLocations = spacesProvider.spaces
-        .where((s) => s.latitude != null && s.longitude != null && s.name != null && s.id != null &&
+        .where((s) => s.latitude != null && s.longitude != null &&
             s.latitude.toString().isNotEmpty && s.longitude.toString().isNotEmpty && s.name.toString().isNotEmpty && s.id.toString().isNotEmpty)
         .map((s) => {
               'id': s.id,
@@ -477,7 +437,7 @@ class _MyMapWidgetState extends State<MyMapWidget> {
         ),
         if(widget.isFullScreen)
         Positioned(
-          bottom: 85.h,
+          bottom: 90.h,
           right: 24.w,
           child: FloatingActionButton(
             heroTag: 'goToMyLocation',

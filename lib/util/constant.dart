@@ -1,7 +1,8 @@
 import 'dart:ui';
 
-const baseUrl = 'http://ahmedfadel2025-001-site1.ltempurl.com/api';
-const baseUrlImage = 'http://ahmedfadel2025-001-site1.ltempurl.com';
+
+const baseUrl = 'http://habbaat.net/api';
+const baseUrlImage = 'http://habbaat.net';
 const spaceUnitUrl = '$baseUrl/spaceUnits';
 const spaceUrl = '$baseUrl/spaces';
 const unitUrl = '$baseUrl/units';

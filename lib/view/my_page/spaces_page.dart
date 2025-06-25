@@ -4,8 +4,8 @@ import 'package:work_spaces/provider/my_provider.dart';
 import 'package:work_spaces/provider/space_units_provider.dart';
 import 'package:work_spaces/util/constant.dart';
 import 'package:work_spaces/view/my_page/space_details_page.dart';
-import 'package:work_spaces/view/my_wedgit/my_mini_card.dart';
-import 'package:work_spaces/view/my_wedgit/my_unit_type_tile.dart';
+import 'package:work_spaces/view/my_widget/my_mini_card.dart';
+import 'package:work_spaces/view/my_widget/my_unit_type_tile.dart';
 
 class SpacesPage extends StatefulWidget {
   static const id = '/HallsPage';

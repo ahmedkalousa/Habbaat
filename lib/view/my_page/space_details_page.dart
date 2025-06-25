@@ -4,15 +4,15 @@ import 'package:flutter/services.dart';
 import 'package:work_spaces/util/constant.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:work_spaces/view/my_page/unit_details_page.dart';
-import 'package:work_spaces/view/my_wedgit/my_map_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:work_spaces/provider/my_provider.dart';
 import 'package:work_spaces/model/space_model.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:readmore/readmore.dart';
-import 'package:work_spaces/view/my_wedgit/my_state_card.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:work_spaces/view/my_widget/my_map_widget.dart';
+import 'package:work_spaces/view/my_widget/my_state_card.dart';
 
 class SpaceDetailsPage extends StatefulWidget {
   static const id = '/SpaceDetailsPage';
@@ -30,7 +30,20 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
   bool showBackButton = true;
   late ScrollController _scrollController;
   int _currentImageIndex = 0;
+int? _tooltipIndex;
 
+void _showTooltip(int idx) {
+  setState(() {
+    _tooltipIndex = idx;
+  });
+  Future.delayed(const Duration(seconds: 2), () {
+    if (mounted && _tooltipIndex == idx) {
+      setState(() {
+        _tooltipIndex = null;
+      });
+    }
+  });
+}
   @override
   
   
@@ -408,7 +421,7 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
                                     Padding(
                                       padding: EdgeInsets.only(top: 16.h),
                                       child: Container(
-                                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
                                         decoration: BoxDecoration(
                                           color: Colors.white.withOpacity(0.8),
                                           borderRadius: BorderRadius.circular(12.r),
@@ -447,76 +460,203 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
                                     ),
                                   if(space.paymentMethods.isNotEmpty)
                                   Padding(
-                                    padding: EdgeInsets.only(top: 16.h),
+                                    padding: EdgeInsets.only(top: 12.h),
                                     child: Container(
-                                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+                                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 12),
                                       decoration: BoxDecoration(
                                         color: Colors.white,
-                                        borderRadius: BorderRadius.circular(14.r),
+                                        borderRadius: BorderRadius.circular(18),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(0.04),
+                                            color: Colors.grey.withOpacity(0.08),
                                             blurRadius: 8,
                                             offset: Offset(0, 2),
                                           ),
                                         ],
                                       ),
-                                      child:  
-                                      Row(
-                                        textDirection: TextDirection.rtl,
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.center,
                                         children: [
-                                           Icon(Icons.payments, color: primaryColor, size: 22.sp),
-                                           SizedBox(width: 8.w),
-                                           Expanded(
-                                            child: Text(
-                                              'طرق الدفع المتاحة',
-                                              style: TextStyle(
-                                                fontSize: 15.sp,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black87,
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(width: 8.w),
-                                          Row(
-                                            children: space.paymentMethods.map((method) {
-                                              IconData icon;
-                                              Color color;
-                                              switch (method.trim()) {
-                                                case 'كاش':
-                                                  icon = Icons.attach_money_rounded;
-                                                  color = Colors.green;
-                                                  break;
-                                              
-                                                case 'بنكي':
-                                                  icon = Icons.credit_card_rounded;
-                                                  color = Colors.blue;
-                                                  break;
-                                                default:
-                                                  icon = Icons.payment;
-                                                  color = Colors.grey;
-                                              }
-                                              return Padding(
-                                                padding: EdgeInsets.only(right: 12.w),
-                                                child: Column(
-                                                  children: [
-                                                    CircleAvatar(
+                                          Icon(Icons.payment, size: 22.sp, color: primaryColor),
+                                          Text(' طرق الدفع المتاحة', style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold)),
+                                          Spacer(),
+                                          ...space.paymentMethods.asMap().entries.map((entry) {
+                                            int idx = entry.key;
+                                            String method = entry.value;
+                                            IconData icon;
+                                            Color color;
+                                            String caption = '';
+                                            switch (method.trim()) {
+                                              case 'كاش':
+                                                icon = Icons.attach_money_rounded;
+                                                color = Colors.green;
+                                                caption = 'كاش';
+                                                break;
+                                              case 'بنكي':
+                                                icon = Icons.credit_card_rounded;
+                                                color = Colors.blue;
+                                                caption = 'بنكي';
+                                                break;
+                                              default:
+                                                icon = Icons.payment;
+                                                color = Colors.grey;
+                                                caption = method;
+                                            }
+                                            return Padding(
+                                              padding: EdgeInsets.only(left: 8),
+                                              child: Stack(
+                                                clipBehavior: Clip.none,
+                                                alignment: Alignment.center,
+                                                children: [
+                                                  GestureDetector(
+                                                    onTap: () => _showTooltip(idx),
+                                                    child: CircleAvatar(
                                                       backgroundColor: color.withOpacity(0.12),
-                                                      radius: 20.r,
-                                                      child: Icon(icon, color: color, size: 22.sp),
+                                                      radius: 22,
+                                                      child: Icon(icon, color: color, size: 26),
                                                     ),
-                                                  ],
-                                                ),
-                                              );
-                                            }).toList(),
-                                          ),
-                                      
+                                                  ),
+                                                  if (_tooltipIndex == idx)
+                                                    Positioned(
+                                                      top: -55,
+                                                      child: Column(
+                                                        children: [
+                                                          Material(
+                                                            color: Colors.transparent,
+                                                            child: Container(
+                                                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                                              decoration: BoxDecoration(
+                                                                color: color.withOpacity(0.12),
+                                                                borderRadius: BorderRadius.circular(8),
+                                                              ),
+                                                              child: Text(
+                                                                caption,
+                                                                style: TextStyle(color: color, fontSize: 14),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          CustomPaint(
+                                                            size: Size(16, 8),
+                                                            painter: _TrianglePainter(color: color.withOpacity(0.12)),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            );
+                                          }).toList(),
                                         ],
                                       ),
-                                      
                                     ),
                                   ),
-
+                                  SizedBox(height: 8.h),
+                                  if(space.spaceUnits.isNotEmpty)
+                                    SizedBox(
+                                      height: 180.h,
+                                      child:
+                                      ListView.builder(
+                                              scrollDirection: Axis.horizontal,
+                                              itemCount: space.spaceUnits.length,
+                                              itemBuilder: (context, index) {
+                                                final unit = space.spaceUnits[index];
+                                                final unitImage = unit.imageUrl.isNotEmpty
+                                                    ? baseUrlImage + unit.imageUrl
+                                                    : 'https://via.placeholder.com/200x150';
+                        
+                                                return 
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    Navigator.push(
+                                                      context, 
+                                                      MaterialPageRoute(
+                                                        builder: (context) => UnitDetailsPage(),
+                                                        settings: RouteSettings(
+                                                          arguments: {'unitId': unit.id},
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                  child: Container(
+                                                    width: 200.w,
+                                                    margin: EdgeInsetsDirectional.only(end: 16.w),
+                                                    decoration: BoxDecoration(
+                                                      borderRadius: BorderRadius.circular(16.r),
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: Colors.black.withOpacity(0.1),
+                                                          blurRadius: 8,
+                                                          offset: const Offset(0, 4),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    child: ClipRRect(
+                                                      borderRadius: BorderRadius.circular(16.r),
+                                                      child: Stack(
+                                                        children: [
+                                                          CachedNetworkImage(
+                                                            imageUrl: unitImage,
+                                                            fit: BoxFit.cover,
+                                                            width: double.infinity,
+                                                            height: double.infinity,
+                                                            placeholder: (context, url) => Container(
+                                                              color: Colors.grey.shade200,
+                                                              child: Center(
+                                                                child: CircularProgressIndicator(
+                                                                  color: primaryColor,
+                                                                  strokeWidth: 2,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          Positioned(
+                                                            bottom: 0,
+                                                            left: 0,
+                                                            right: 0,
+                                                            child: Container(
+                                                              padding: EdgeInsets.all(12.w),
+                                                              decoration: BoxDecoration(
+                                                                gradient: LinearGradient(
+                                                                  begin: Alignment.topCenter,
+                                                                  end: Alignment.bottomCenter,
+                                                                  colors: [
+                                                                    Colors.transparent,
+                                                                    Colors.black.withOpacity(0.7),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                              child: Column(
+                                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                                children: [
+                                                                  Text(
+                                                                    unit.name,
+                                                                    style: TextStyle(
+                                                                      color: Colors.white,
+                                                                      fontSize: 14.sp,
+                                                                      fontWeight: FontWeight.w600,
+                                                                    ),
+                                                                  ),
+                                                                  Text(
+                                                                    unit.unitCategoryName,
+                                                                    style: TextStyle(
+                                                                      color: Colors.white,
+                                                                      fontSize: 12.sp,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                    ),
+                 
                                 ],
                               ),
                             ),
@@ -704,8 +844,9 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
                                       child: Column(
                                         children: [
                                           Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
-                                          
+
                                             GestureDetector(
                                               onTap: () async {
                                                 final Uri phoneUri = Uri(scheme: 'tel', path: space.contactNumber);
@@ -714,11 +855,10 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
                                                 }
                                               },
                                               child: Text(
+                                                textDirection: TextDirection.ltr,
                                                 space.contactNumber,
                                                 style: TextStyle(
                                                   fontSize: 15.sp,
-                                                  color: Colors.blue.shade700,
-                                                  decoration: TextDecoration.underline,
                                                 ),
                                               ),
                                             ),
@@ -743,146 +883,7 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
                       ),
                     ),
                   ),
-                  SizedBox(
-                    height: 180.h,
-                    child: space.spaceUnits.isEmpty
-                        ? Center(
-                            child: Container(
-                              padding: EdgeInsets.all(20.w),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16.r),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.photo_library_outlined,
-                                    size: 48.sp,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                  SizedBox(height: 12.h),
-                                  Text(
-                                    'لا توجد وحدات لعرضها',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 16.sp,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            padding: EdgeInsets.symmetric(horizontal: 20.w),
-                            itemCount: space.spaceUnits.length,
-                            itemBuilder: (context, index) {
-                              final unit = space.spaceUnits[index];
-                              final unitImage = unit.imageUrl.isNotEmpty
-                                  ? baseUrlImage + unit.imageUrl
-                                  : 'https://via.placeholder.com/200x150';
-      
-                              return 
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context, 
-                                    MaterialPageRoute(
-                                      builder: (context) => UnitDetailsPage(),
-                                      settings: RouteSettings(
-                                        arguments: {'unitId': unit.id},
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  width: 200.w,
-                                  margin: EdgeInsetsDirectional.only(end: 16.w),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16.r),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(16.r),
-                                    child: Stack(
-                                      children: [
-                                        CachedNetworkImage(
-                                          imageUrl: unitImage,
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          height: double.infinity,
-                                          placeholder: (context, url) => Container(
-                                            color: Colors.grey.shade200,
-                                            child: Center(
-                                              child: CircularProgressIndicator(
-                                                color: primaryColor,
-                                                strokeWidth: 2,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        Positioned(
-                                          bottom: 0,
-                                          left: 0,
-                                          right: 0,
-                                          child: Container(
-                                            padding: EdgeInsets.all(12.w),
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                begin: Alignment.topCenter,
-                                                end: Alignment.bottomCenter,
-                                                colors: [
-                                                  Colors.transparent,
-                                                  Colors.black.withOpacity(0.7),
-                                                ],
-                                              ),
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  unit.name,
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 14.sp,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  unit.unitCategoryName,
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 12.sp,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                  SizedBox(height: 20.h),
+                 SizedBox(height: 20.h),
                 ],
               ),
             )
@@ -938,7 +939,7 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
                 print('تم الضغط على أيقونة $platform: ${link.url}');
                 final url = Uri.parse(link.url.startsWith('http') ? link.url : 'https://${link.url}');
                 print(url);
-                if (await canLaunchUrl(url)) {
+                if (await canLaunchUrl(url) == false) {
                   await launchUrl(url, mode: LaunchMode.externalApplication);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -977,7 +978,7 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
             onTap: () async {
               print('تم الضغط على أيقونة واتساب: $phone');
               final Uri url = Uri.parse('https://wa.me/$phone');
-              if (await canLaunchUrl(url)) {
+              if (await canLaunchUrl(url) == false) {
                 await launchUrl(url, mode: LaunchMode.externalApplication);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1007,4 +1008,21 @@ class _SpaceDetailsPageState extends State<SpaceDetailsPage>  with TickerProvide
     return icons;
   }
 
+}
+
+class _TrianglePainter extends CustomPainter {
+  final Color color;
+  _TrianglePainter({required this.color});
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..lineTo(size.width, 0)
+      ..close();
+    canvas.drawPath(path, paint);
+  }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

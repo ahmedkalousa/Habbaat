@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:work_spaces/util/constant.dart';
 import 'package:work_spaces/view/my_page/space_details_page.dart';
-import 'package:work_spaces/view/my_wedgit/my_mini_card.dart';
+import 'package:work_spaces/view/my_widget/my_mini_card.dart';
 
 class SearchResultsPage extends StatefulWidget {
   final List results;

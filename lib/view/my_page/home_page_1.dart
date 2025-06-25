@@ -10,12 +10,14 @@ import 'package:work_spaces/util/constant.dart';
 import 'package:work_spaces/view/my_page/home_page_skeleton.dart';
 import 'package:work_spaces/view/my_page/space_details_page.dart';
 import 'package:work_spaces/view/my_page/unit_details_page.dart';
-import 'package:work_spaces/view/my_wedgit/my_card.dart';
-import 'package:work_spaces/view/my_wedgit/my_mini_card.dart';
-import 'package:work_spaces/view/my_wedgit/my_section_tile.dart';
 import 'package:work_spaces/view/my_page/units_page.dart';
 import 'package:work_spaces/view/my_page/search_results_page.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
+import 'package:work_spaces/view/my_widget/my_card.dart';
+import 'package:work_spaces/view/my_widget/my_mini_card.dart';
+import 'dart:io';
+
+import 'package:work_spaces/view/my_widget/my_section_tile.dart';
 
 class HomePage extends StatefulWidget {
   static const String id = '/HomePage';
@@ -64,11 +66,28 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // دالة فحص وجود إنترنت فعلي
+  Future<bool> hasInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        return true;
+      }
+      return false;
+    } on SocketException catch (_) {
+      return false;
+    }
+  }
+
   // دالة فحص الاتصال بالإنترنت
   Future<void> _checkConnectivity() async {
     final connectivityResult = await Connectivity().checkConnectivity();
+    bool connected = connectivityResult != ConnectivityResult.none;
+    if (connected) {
+      connected = await hasInternetConnection();
+    }
     setState(() {
-      _isConnected = connectivityResult != ConnectivityResult.none;
+      _isConnected = connected;
     });
   }
 
@@ -97,25 +116,21 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _refreshData(BuildContext context) async {
     await _checkConnectivity();
-    
     if (!_isConnected) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('لا يوجد اتصال بالإنترنت. لا يمكن تحديث البيانات'),
+          content: Text('لا يوجد اتصال بالإنترنت الفعلي. لا يمكن تحديث البيانات'),
           duration: Duration(seconds: 2),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
-
     final spacesProvider = Provider.of<SpacesProvider>(context, listen: false);
     final unitsProvider = Provider.of<SpaceUnitsProvider>(context, listen: false);
-    
     try {
       await spacesProvider.fetchSpacesAndUnits(forceRefresh: true);
       await unitsProvider.fetchSpacesAndUnits(forceRefresh: true);
-      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('تم تحديث البيانات بنجاح'),
@@ -133,12 +148,6 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
-
-  // دالة callback للتحديث مع فحص الاتصال
-  Future<void> _handleRefresh() async {
-    await _refreshData(context);
-  }
-
   // دالة callback للتحديث مع فحص الاتصال
   Future<void> _conditionalRefresh() async {
     if (_isConnected) {
@@ -168,8 +177,35 @@ class _HomePageState extends State<HomePage> {
           if (provider.spaces.isEmpty && provider.isInitialized) {
             return const Center(child: Text('لا توجد بيانات متاحة'));
           }
-          if (provider.error != null) {
-            return Center(child: Text('خطأ: [31m${provider.error}[0m'));
+          if (provider.error != null && provider.spaces.isEmpty) {
+            String message;
+              message = 'لا توجد بيانات متاحة حالياً. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.';
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.info_outline, color: Colors.grey, size: 48),
+                  SizedBox(height: 12),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => _refreshData(context),
+                    icon: Icon(Icons.refresh),
+                    label: Text('إعادة المحاولة'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
           // فلترة المساحات حسب البحث
           final filteredSpaces = provider.spaces.where((space) {
@@ -430,7 +466,7 @@ class _HomePageState extends State<HomePage> {
                             if (value.units.isEmpty && value.isInitialized) {
                               return const Center(child: Text('لا توجد وحدات متاحة'));
                             }
-                            if (value.error != null) {
+                            if (value.error != null && value.units.isEmpty) {
                               return Center(child: Text('خطأ: ${value.error}'));
                             }
                             return Padding(

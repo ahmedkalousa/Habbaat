@@ -4,14 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:work_spaces/model/space_model.dart';
 import 'package:work_spaces/provider/my_provider.dart';
 import 'package:work_spaces/util/constant.dart';
 import 'package:work_spaces/view/my_page/unit_details_page.dart';
-import 'package:work_spaces/view/my_wedgit/my_map_widget.dart';
-import 'package:work_spaces/view/my_wedgit/my_state_card.dart';
+import 'package:work_spaces/view/my_widget/my_map_widget.dart';
+import 'package:work_spaces/view/my_widget/my_state_card.dart';
 
 class InitiativePage extends StatefulWidget {
   static const String id = '/InitiativePage';

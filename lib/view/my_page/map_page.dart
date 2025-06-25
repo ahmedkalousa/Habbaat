@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:work_spaces/view/my_wedgit/my_map_widget.dart';
+import 'package:work_spaces/view/my_widget/my_map_widget.dart';
 
 class MapPage extends StatefulWidget {
   static const String id = 'MapPage';

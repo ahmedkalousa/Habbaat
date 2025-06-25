@@ -32,8 +32,6 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late final SpacesProvider spacesProvider;
   late final SpaceUnitsProvider unitsProvider;
-  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
-  bool? _isOnline;
 
   @override
   void initState() {
@@ -47,7 +45,6 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initData() async {
     final connectivityResult = await Connectivity().checkConnectivity();
     final isOnline = connectivityResult != ConnectivityResult.none;
-    _isOnline = isOnline;
     await _fetchAndCache(isOnline);
   }
 
