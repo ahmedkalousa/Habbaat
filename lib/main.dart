@@ -6,7 +6,6 @@ import 'package:work_spaces/provider/my_provider.dart';
 import 'package:work_spaces/view/my_page/favorite_page.dart';
 import 'package:work_spaces/view/my_page/initiative_page.dart';
 import 'package:work_spaces/view/my_page/space_details_page.dart';
-import 'package:work_spaces/view/my_page/splash_page.dart';
 import 'package:work_spaces/view/my_page/unit_details_page.dart';
 import 'package:work_spaces/view/my_page/spaces_page.dart';
 import 'package:work_spaces/view/my_page/main_home_page.dart';
@@ -71,6 +70,9 @@ class _MyAppState extends State<MyApp> {
         print('Caching ${spacesToCache.length} random spaces and ${unitsToCache.length} units.');
         await LocalDatabase.saveSpaces(spacesToCache);
         await LocalDatabase.saveUnits(unitsToCache);
+        
+        // 6. حفظ البيانات العشوائية للواجهة الرئيسية
+        await spacesProvider.saveRandomDataToLocal();
       }
     }
   }
@@ -92,7 +94,7 @@ class _MyAppState extends State<MyApp> {
         textDirection: TextDirection.rtl,
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          home: const splashPage(),
+          home:  mainHomePage(),
           routes: {
             mainHomePage.id: (context) =>  mainHomePage(),
             HomePage.id: (context) => const HomePage(),

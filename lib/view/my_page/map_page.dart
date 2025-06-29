@@ -10,33 +10,13 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
-  var locations = [
-           {
-              'name': 'مساحة غزة',
-              'lat': 31.5,
-              'lng': 34.47,
-              'color': Colors.red,
-            },
-            {
-              'name': 'مساحة خانيونس',
-              'lat': 31.34,
-              'lng': 34.30,
-              'color': Colors.blue,
-            },
-            {
-              'name': 'مساحة رفح',
-              'lat': 31.28,
-              'lng': 34.24,
-              'color': Colors.green,
-            },
-            ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: MyMapWidget(
-        locations: locations,
-        latitude: locations[0]['lat'] as double,
-        longitude: locations[0]['lng'] as double,
+        latitude: 3.5,
+        longitude: 5.6,
         spaceName: '',
         spaceLocation: '',
         isFullScreen: true,

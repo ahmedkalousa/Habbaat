@@ -69,7 +69,7 @@ class _mainHomePageState extends State<mainHomePage> {
                 items: const [
                   BottomNavigationBarItem(icon: Icon(Icons.home), label: 'الرئيسية'),
                   BottomNavigationBarItem(icon: Icon(Icons.location_city), label: 'المساحات'),
-                  BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'المبادرات'),
+                  BottomNavigationBarItem(icon: Icon(Icons.map_sharp), label: 'الخريطة'),
                   BottomNavigationBarItem(icon: Icon(Icons.list), label: 'القائمة'),
                 ],
               ),
