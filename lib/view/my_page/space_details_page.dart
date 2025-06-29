@@ -4,15 +4,15 @@ import 'package:flutter/services.dart';
 import 'package:work_spaces/util/constant.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:work_spaces/view/my_page/unit_details_page.dart';
+import 'package:work_spaces/view/my_widget/my_map_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:work_spaces/provider/my_provider.dart';
 import 'package:work_spaces/model/space_model.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:readmore/readmore.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:work_spaces/view/my_widget/my_map_widget.dart';
 import 'package:work_spaces/view/my_widget/my_state_card.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SpaceDetailsPage extends StatefulWidget {
   static const id = '/SpaceDetailsPage';
@@ -758,23 +758,21 @@ void _showTooltip(int idx) {
                                               ),
                                             ],
                                           ),
-                                          child: Row(
-                                            children: [
-                                              Icon(FontAwesomeIcons.check, color: Colors.green, size: 22.sp),
-                                              SizedBox(width: 8.w),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: space.features.map((feature) => Padding(
-                                                    padding: EdgeInsets.symmetric(vertical: 2.h),
-                                                    child: Text(
-                                                      feature,
-                                                      style: TextStyle(fontSize: 14.sp, color: Colors.black87),
-                                                    ),
-                                                  )).toList(),
-                                                ),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: space.features.map((feature) => Padding(
+                                              padding: EdgeInsets.symmetric(vertical: 2.h),
+                                              child: Row(
+                                                children: [
+                                                  Icon(FontAwesomeIcons.check, color: Colors.green, size: 22.sp),
+                                                  SizedBox(width: 8.w),
+                                                  Text(
+                                                    feature,
+                                                    style: TextStyle(fontSize: 14.sp, color: Colors.black87),
+                                                  ),
+                                                ],
                                               ),
-                                            ],
+                                            )).toList(),
                                           ),
                                         ),
                                       ),
@@ -782,6 +780,8 @@ void _showTooltip(int idx) {
                                   ),
                                   SizedBox(height: 24.h),
                                   // Map section
+                                  if(space.latitude != null && space.longitude != null && 
+                                     space.latitude != 0.0 && space.longitude != 0.0)
                                   Container(
                                     width: double.infinity,
                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -821,16 +821,91 @@ void _showTooltip(int idx) {
                                         ),
                                         SizedBox(height: 8.h),
                                         MyMapWidget(
-                                          latitude: space.latitude ??31.5145,
-                                          longitude: space.longitude ?? 34.4453,
+                                          latitude: space.latitude,
+                                          longitude: space.longitude,
                                           spaceName: space.name,
                                           spaceLocation: space.location,
                                         ),
                                       ],
                                     ),
+                                  )
+                                  else
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade50,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: Colors.grey.shade100, width: 1),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.map, size: 22),
+                                            const SizedBox(width: 10),
+                                            const Text(
+                                              'موقع المساحة',
+                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: 8.h),
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Icon(Icons.location_on_outlined, size: 16.sp,),
+                                            SizedBox(width: 5.w),
+                                            Expanded(
+                                              child: Text(
+                                                space.location,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w500),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: 8.h),
+                                        Container(
+                                          height: 200.h,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade100,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: Colors.grey.shade300),
+                                          ),
+                                          child: Center(
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(Icons.location_off, size: 48, color: Colors.grey),
+                                                SizedBox(height: 8),
+                                                Text(
+                                                  'إحداثيات الموقع غير متوفرة',
+                                                  style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.bold),
+                                                ),
+                                                SizedBox(height: 4),
+                                                Text(
+                                                  'سيتم إضافتها قريباً',
+                                                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  SizedBox(height: 24.h),
+                                  SizedBox(height: 12.h),
                                   // قسم معلومات التواصل
+                                  if(space.contactNumber.isNotEmpty)
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(' للتواصل مع ${space.name}', style: TextStyle(fontSize: 16.sp),),
+                                    ],
+                                  ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16),
                                     child: Container(
@@ -846,7 +921,6 @@ void _showTooltip(int idx) {
                                           Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
-
                                             GestureDetector(
                                               onTap: () async {
                                                 final Uri phoneUri = Uri(scheme: 'tel', path: space.contactNumber);
@@ -943,14 +1017,21 @@ void _showTooltip(int idx) {
                   await launchUrl(url, mode: LaunchMode.externalApplication);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('لا يمكن فتح الرابط: ${link.url}')),
+                    SnackBar(
+                      content: Text('لا يمكن فتح الرابط: ${link.url}'),
+                      behavior: SnackBarBehavior.floating,
+                      margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                      backgroundColor: Colors.red.withOpacity(0.9),
+                      duration: Duration(seconds: 3),
+                    ),
                   );
                 }
               },
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: iconData['color'].withOpacity(0.12),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -982,14 +1063,21 @@ void _showTooltip(int idx) {
                 await launchUrl(url, mode: LaunchMode.externalApplication);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('لا يمكن فتح الواتساب')),
+                  SnackBar(
+                    content: Text('لا يمكن فتح الواتساب'),
+                    behavior: SnackBarBehavior.floating,
+                    margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                    backgroundColor: Colors.red.withOpacity(0.9),
+                    duration: Duration(seconds: 3),
+                  ),
                 );
               }
             },
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Colors.green.withOpacity(0.12),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(

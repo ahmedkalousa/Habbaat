@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -10,14 +9,13 @@ import 'package:work_spaces/util/constant.dart';
 import 'package:work_spaces/view/my_page/home_page_skeleton.dart';
 import 'package:work_spaces/view/my_page/space_details_page.dart';
 import 'package:work_spaces/view/my_page/unit_details_page.dart';
+import 'package:work_spaces/view/my_widget/my_card.dart';
+import 'package:work_spaces/view/my_widget/my_mini_card.dart';
+import 'package:work_spaces/view/my_widget/my_section_tile.dart';
 import 'package:work_spaces/view/my_page/units_page.dart';
 import 'package:work_spaces/view/my_page/search_results_page.dart';
 import 'package:liquid_pull_to_refresh/liquid_pull_to_refresh.dart';
-import 'package:work_spaces/view/my_widget/my_card.dart';
-import 'package:work_spaces/view/my_widget/my_mini_card.dart';
 import 'dart:io';
-
-import 'package:work_spaces/view/my_widget/my_section_tile.dart';
 
 class HomePage extends StatefulWidget {
   static const String id = '/HomePage';
@@ -55,13 +53,7 @@ class _HomePageState extends State<HomePage> {
       
       // إظهار رسالة للمستخدم عند تغيير حالة الاتصال
       if (!_isConnected) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم فقدان الاتصال بالإنترنت'),
-            duration: Duration(seconds: 2),
-            backgroundColor: Colors.orange,
-          ),
-        );
+        showFriendlyErrorSnackBar('لا يوجد اتصال فعلي بالإنترنت');
       }
     });
   }
@@ -117,13 +109,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _refreshData(BuildContext context) async {
     await _checkConnectivity();
     if (!_isConnected) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('لا يوجد اتصال بالإنترنت الفعلي. لا يمكن تحديث البيانات'),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showFriendlyErrorSnackBar('لا يوجد اتصال فعلي بالإنترنت');
       return;
     }
     final spacesProvider = Provider.of<SpacesProvider>(context, listen: false);
@@ -131,21 +117,26 @@ class _HomePageState extends State<HomePage> {
     try {
       await spacesProvider.fetchSpacesAndUnits(forceRefresh: true);
       await unitsProvider.fetchSpacesAndUnits(forceRefresh: true);
+      // تحديث القوائم العشوائية
+      spacesProvider.updateRandomData();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تم تحديث البيانات بنجاح'),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12.w),
+              Expanded(child: Text('تم تحديث البيانات بنجاح', style: TextStyle(color: Colors.white))),
+            ],
+          ),
+          backgroundColor: Colors.green.withOpacity(0.9),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+          duration: Duration(seconds: 3),
+          margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('حدث خطأ أثناء تحديث البيانات'),
-          duration: const Duration(seconds: 2),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showFriendlyErrorSnackBar('حدث خطأ أثناء تحديث البيانات');
     }
   }
   // دالة callback للتحديث مع فحص الاتصال
@@ -153,14 +144,53 @@ class _HomePageState extends State<HomePage> {
     if (_isConnected) {
       await _refreshData(context);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('لا يوجد اتصال بالإنترنت. لا يمكن تحديث البيانات'),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showFriendlyErrorSnackBar('لا يوجد اتصال فعلي بالإنترنت');
     }
+  }
+
+  // دالة لعرض رسالة خطأ ودية وجميلة
+  void showFriendlyErrorSnackBar(String? error) {
+    String message;
+    Color color = Colors.red;
+    IconData icon = Icons.error_outline;
+    if (error == null) {
+      message = 'حدث خطأ غير متوقع. حاول مرة أخرى.';
+      color = Colors.red;
+      icon = Icons.error_outline;
+    } else if (error.contains('لا يوجد اتصال فعلي بالإنترنت')) {
+      message = 'يبدو أنك غير متصل بالإنترنت. يرجى التحقق من الاتصال.';
+      color = Colors.orange;
+      icon = Icons.wifi_off;
+    } else if (error.contains('تم عرض بيانات قديمة')) {
+      message = 'تم عرض بيانات قديمة بسبب عدم توفر اتصال بالسيرفر أو الإنترنت.';
+      color = Colors.amber;
+      icon = Icons.history;
+    } else if (error.contains('حدث خطأ أثناء الاتصال بالسيرفر')) {
+      message = 'حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة لاحقاً.';
+      color = Colors.redAccent;
+      icon = Icons.cloud_off;
+    } else {
+      message = error;
+      color = Colors.red;
+      icon = Icons.error_outline;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            SizedBox(width: 12.w),
+            Expanded(child: Text(message, style: TextStyle(color: Colors.white))),
+          ],
+        ),
+        backgroundColor: color.withOpacity(0.9),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+        duration: Duration(seconds: 3),
+        margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+        elevation: 8,
+      ),
+    );
   }
 
   @override
@@ -185,13 +215,13 @@ class _HomePageState extends State<HomePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.info_outline, color: Colors.grey, size: 48),
-                  SizedBox(height: 12),
+                  SizedBox(height: 12.h),
                   Text(
                     message,
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                   ),
-                  SizedBox(height: 16),
+                  SizedBox(height: 16.h),
                   ElevatedButton.icon(
                     onPressed: () => _refreshData(context),
                     icon: Icon(Icons.refresh),
@@ -208,7 +238,7 @@ class _HomePageState extends State<HomePage> {
             );
           }
           // فلترة المساحات حسب البحث
-          final filteredSpaces = provider.spaces.where((space) {
+          provider.spaces.where((space) {
             final name = space.name.toLowerCase();
             final governorate = space.governorate.toLowerCase();
             final query = searchText.toLowerCase();
@@ -239,44 +269,24 @@ class _HomePageState extends State<HomePage> {
                       else
                         Stack(
                           children: [
-                            CachedNetworkImage(
-                              imageUrl: (provider.spaces[0].images.length > 1)
-                                  ? baseUrlImage + provider.spaces[0].images[1].imageUrl
-                                  : baseUrlImage + provider.spaces[0].images[0].imageUrl,
-                              cacheKey: (provider.spaces[0].images.length > 1)
-                                  ? baseUrlImage + provider.spaces[0].images[1].imageUrl
-                                  : baseUrlImage + provider.spaces[0].images[0].imageUrl,
-                              width: 1.sw,
-                              height: 200.h,
-                              fit: BoxFit.cover,
-                              fadeInDuration: Duration(milliseconds: 300),
-                              fadeOutDuration: Duration(milliseconds: 300),
-                              maxWidthDiskCache: 800,
-                              maxHeightDiskCache: 400,
-                              useOldImageOnUrlChange: true,
-                              placeholder: (context, url) => Container(
-                                width: 1.sw,
-                                height: 200.h,
-                                color: Colors.grey[300],
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                                  ),
-                                ),
-                              ),
-                              errorWidget: (context, url, error) {
-                                return Container(
-                                  width: 1.sw,
-                                  height: 200.h,
-                                  color: Colors.grey[300],
-                                  child: Icon(Icons.error, size: 50.sp, color: Colors.red),
-                                );
-                              },
+                            Image.asset(
+                              "images/main_header_1.png", 
+                            width: 1.sw, 
+                            height: 200.h, 
+                            fit: BoxFit.cover,
                             ),
                             Container(
-                              height: 200.h,
-                              color: Colors.black.withOpacity(0.5),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.blue.withOpacity(0.8),
+                                    Colors.blue.withOpacity(0.6),
+                                    Colors.blue.withOpacity(0.4),
+                                  ],
+                                ),
+                              ),
                             ),
                             Positioned(
                               top: 110.h,
@@ -288,7 +298,7 @@ class _HomePageState extends State<HomePage> {
                                     "مرحباً بك!",
                                     style: TextStyle(color: Colors.white, fontSize: 16.sp),
                                   ),
-                                  SizedBox(height: 4.h),
+                                  SizedBox(height: 4.w),
                                   Text(
                                     "استكشف المساحات القريبة منك",
                                     style: TextStyle(
@@ -303,7 +313,7 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       Padding(
-                        padding: EdgeInsets.all(16.w),
+                        padding: EdgeInsets.all(16.h),
                         child: Material(
                           elevation: 1,
                           shadowColor: Colors.grey,
@@ -317,7 +327,7 @@ class _HomePageState extends State<HomePage> {
                                     hintText: "ابحث عن مساحة أو محافظة",
                                     hintTextDirection: TextDirection.rtl,
                                     border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
+                                    contentPadding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.h),
                                   ),
                                   onSubmitted: (_) => _goToSearchPage(context, provider.spaces),
                                 ),
@@ -337,45 +347,8 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                       ),
-                      // عند البحث، اعرض فقط المساحات الشائعة المطابقة للبحث
-                      if (searchText.isNotEmpty)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            MySectionTile(title: "المساحات الشائعة"),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16.w),
-                              child: GridView.builder(
-                                padding: EdgeInsets.symmetric(vertical: 8.h),
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: filteredSpaces.length < 4 ? filteredSpaces.length : 4,
-                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 1,
-                                  crossAxisSpacing: 8.w,
-                                  childAspectRatio: 1.7,
-                                  mainAxisSpacing: 8.h),
-                                itemBuilder: (context, index) {
-                                  return MyMiniCard(
-                                    onTap: () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        SpaceDetailsPage.id,
-                                        arguments: {'spaceId': filteredSpaces[index].id},
-                                      );
-                                    },
-                                    imagePath: baseUrlImage + filteredSpaces[index].images[0].imageUrl,
-                                    title: filteredSpaces[index].name,
-                                    subtitle: filteredSpaces[index].governorate,
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        )
-                      else ...[
-                        MySectionTile(title:  "تصنيفات القاعات"),
-                        Padding(
+                      MySectionTile(title:  "تصنيفات القاعات"),
+                      Padding(
                           padding: EdgeInsets.symmetric(vertical: 8.h),
                           child: Row(
                             textDirection: TextDirection.rtl,
@@ -417,14 +390,14 @@ class _HomePageState extends State<HomePage> {
                             ],
                           ),
                         ),
-                        MySectionTile(title: "المساحات الشائعة"),
+                        MySectionTile(title: "المساحات المتاحة"),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16.w),
                           child: GridView.builder(
                             padding: EdgeInsets.symmetric(vertical: 8.h),
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: provider.spaces.length < 4 ? provider.spaces.length : 4,
+                            itemCount: provider.randomSpaces.length,
                             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 1,
                               crossAxisSpacing: 8.w,
@@ -436,12 +409,12 @@ class _HomePageState extends State<HomePage> {
                                   Navigator.pushNamed(
                                     context,
                                     SpaceDetailsPage.id,
-                                    arguments: {'spaceId': provider.spaces[index].id},
+                                    arguments: {'spaceId': provider.randomSpaces[index].id},
                                   );
                                 },
-                                imagePath: baseUrlImage + provider.spaces[index].images[0].imageUrl,
-                                title: provider.spaces[index].name,
-                                subtitle: provider.spaces[index].location,
+                                imagePath: baseUrlImage + provider.randomSpaces[index].images[0].imageUrl,
+                                title: provider.randomSpaces[index].name,
+                                subtitle: provider.randomSpaces[index].location,
                               );
                             },
                           ),
@@ -449,7 +422,7 @@ class _HomePageState extends State<HomePage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            MySectionTile(title: "جديد هذا الأسبوع"),
+                            MySectionTile(title: "الوحدات المتاحة"),
                             TextButton(
                               onPressed: () {
                                 Navigator.pushNamed(context, UnitsPage.id);
@@ -469,10 +442,14 @@ class _HomePageState extends State<HomePage> {
                             if (value.error != null && value.units.isEmpty) {
                               return Center(child: Text('خطأ: ${value.error}'));
                             }
+                            
+                            if (provider.randomUnits.isEmpty) {
+                              return const Center(child: Text('لا توجد وحدات متاحة'));
+                            }
                             return Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16.w),
                               child: GridView.builder(
-                                itemCount: value.units.length < 4 ? value.units.length : 4,
+                                itemCount: provider.randomUnits.length,
                                 shrinkWrap: true,
                                 padding: EdgeInsets.symmetric(vertical: 8.h),
                                 physics: const NeverScrollableScrollPhysics(),
@@ -484,7 +461,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 itemBuilder: (context, index) {
                                   String uniteSpaceLocation = provider.spaces.firstWhere(
-                                    (space) => space.id == value.units[index].spaceId,
+                                    (space) => space.id == provider.randomUnits[index].spaceId,
                                     orElse: () => provider.spaces[0],
                                   ).governorate;
                                   return MyMiniCard(
@@ -492,11 +469,11 @@ class _HomePageState extends State<HomePage> {
                                       Navigator.pushNamed(
                                         context,
                                         UnitDetailsPage.id,
-                                        arguments: {'unitId': value.units[index].id},
+                                        arguments: {'unitId': provider.randomUnits[index].id},
                                       );
                                     },
-                                    imagePath: baseUrlImage + value.units[index].imageUrl!,
-                                    title: value.units[index].unitCategoryName,
+                                    imagePath: baseUrlImage + (provider.randomUnits[index].imageUrl ?? ''),
+                                    title: provider.randomUnits[index].unitCategoryName,
                                     subtitle: uniteSpaceLocation,
                                   );
                                 },
@@ -504,7 +481,6 @@ class _HomePageState extends State<HomePage> {
                             );
                           },
                         ),
-                      ],
                       SizedBox(height: 80.h),
                     ],
                   ),

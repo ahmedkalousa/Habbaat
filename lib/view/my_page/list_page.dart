@@ -23,12 +23,26 @@ class _ListPageState extends State<ListPage> {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('لا يمكن فتح الرابط: $urlString')),
+          SnackBar(
+            content: Text('لا يمكن فتح الرابط: $urlString'),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            backgroundColor: Colors.red.withOpacity(0.9),
+            duration: Duration(seconds: 3),
+          ),
         );
       }
     } catch (e) {
        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ في فتح الرابط: $urlString')),
+          SnackBar(
+            content: Text('خطأ في فتح الرابط: $urlString'),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            backgroundColor: Colors.red.withOpacity(0.9),
+            duration: Duration(seconds: 3),
+          ),
         );
     }
   }
@@ -103,8 +117,8 @@ class _ListPageState extends State<ListPage> {
                           color: primaryColor,
                         ),
                         _DrawerItem(
-                          icon: Icons.lightbulb,
-                          label: 'المبادرات',
+                          icon: Icons.map,
+                          label: 'الخريطة',
                           onTap: () {
                             Navigator.push(context, MaterialPageRoute(
                               builder: (context) {
