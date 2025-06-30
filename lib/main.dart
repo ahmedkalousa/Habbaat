@@ -14,11 +14,22 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:work_spaces/model/local_database.dart';
 import 'dart:async';
 import 'dart:math';
+import 'package:work_spaces/util/connectivity_handler.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SpacesProvider()),
+        ChangeNotifierProvider(create: (_) => SpaceUnitsProvider()),
+      ],
+      child: ConnectivityHandler(
+        child: MyApp(),
+      ),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -31,6 +42,8 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late final SpacesProvider spacesProvider;
   late final SpaceUnitsProvider unitsProvider;
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+  bool _wasOffline = false;
 
   @override
   void initState() {
@@ -38,7 +51,7 @@ class _MyAppState extends State<MyApp> {
     spacesProvider = SpacesProvider();
     unitsProvider = SpaceUnitsProvider();
     _initData();
-  
+    _setupConnectivityListener();
   }
 
   Future<void> _initData() async {
@@ -56,30 +69,47 @@ class _MyAppState extends State<MyApp> {
     if (isOnline) {
       final allSpaces = spacesProvider.spaces;
       if (allSpaces.isNotEmpty) {
-        // 3. خلط قائمة المساحات واختيار 5 منها (أو أقل إذا كان العدد الإجمالي أقل من 5)
-        final shuffledSpaces = List.of(allSpaces)..shuffle();
-        final spacesToCache = shuffledSpaces.take(min(5, shuffledSpaces.length)).toList();
+        // 1. اختر فقط المساحات التي لديها وحدات
+        final spacesWithUnits = allSpaces.where((s) => s.spaceUnits.isNotEmpty).toList();
+        // 2. خلط قائمة المساحات واختيار 6 منها (أو أقل إذا كان العدد أقل)
+        final shuffledSpaces = List.of(spacesWithUnits)..shuffle();
+        final spacesToCache = shuffledSpaces.take(min(6, shuffledSpaces.length)).toList();
 
-        // 4. استخراج الوحدات التابعة للمساحات التي تم اختيارها فقط
+        // 3. استخراج الوحدات التابعة للمساحات التي تم اختيارها فقط
         final spaceIdsToCache = spacesToCache.map((s) => s.id).toSet();
-        final unitsToCache = unitsProvider.units
+        final allUnitsForSelectedSpaces = unitsProvider.units
             .where((u) => spaceIdsToCache.contains(u.spaceId))
             .toList();
 
+        // 4. احفظ كل الوحدات التابعة للمساحات المختارة (وليس فقط 6 وحدات)
+        final unitsToCache = allUnitsForSelectedSpaces;
+
         // 5. حفظ المساحات والوحدات المختارة في قاعدة البيانات المحلية
-        print('Caching ${spacesToCache.length} random spaces and ${unitsToCache.length} units.');
+        print('Caching ${spacesToCache.length} random spaces (with units) and ${unitsToCache.length} units.');
         await LocalDatabase.saveSpaces(spacesToCache);
         await LocalDatabase.saveUnits(unitsToCache);
-        
         // 6. حفظ البيانات العشوائية للواجهة الرئيسية
         await spacesProvider.saveRandomDataToLocal();
       }
     }
   }
 
+  void _setupConnectivityListener() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) async {
+      final isOnline = result != ConnectivityResult.none;
+      if (isOnline && _wasOffline) {
+        // رجع النت بعد انقطاع
+        await spacesProvider.fetchSpacesAndUnits(isOnline: true, forceRefresh: true);
+        await unitsProvider.fetchSpacesAndUnits(isOnline: true, forceRefresh: true);
+        // يمكنك هنا عرض Snackbar أو رسالة للمستخدم إذا أردت
+      }
+      _wasOffline = !isOnline;
+    });
+  }
+
   @override
   void dispose() {
-    // _connectivitySubscription.cancel();
+    _connectivitySubscription?.cancel();
     super.dispose();
   }
 

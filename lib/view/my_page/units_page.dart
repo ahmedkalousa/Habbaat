@@ -57,6 +57,11 @@ class _UnitsPageState extends State<UnitsPage> {
             final allUnits = provider.units;
             final spacesProvider = Provider.of<SpacesProvider>(context, listen: false);
             final allSpaces = spacesProvider.spaces;
+            // تعديل: في وضع offline، استخدم دالة spacesProvider.getUnitsForLocalSpacesAndRandomUnits
+            final isOffline = false; // عدل هذا بناءً على منطق الاتصال لديك
+            final unitsToShow = isOffline
+                ? spacesProvider.getUnitsForLocalSpacesAndRandomUnits(allUnits)
+                : allUnits;
             // استخراج القيم الفريدة للفلاتر من المساحات
             final locations = allSpaces.map((s) => s.governorate).toSet().toList();
             final unitCategories = allUnits
@@ -67,7 +72,7 @@ class _UnitsPageState extends State<UnitsPage> {
                 .toList();
             final bookingOptions = allUnits.expand((u) => u.bookingOptions.map((b) => b.duration)).toSet().toList();
 
-            final filteredUnits = allUnits.where((unit) {
+            final filteredUnits = unitsToShow.where((unit) {
               Space? parentSpace;
               try {
                 parentSpace = allSpaces.firstWhere((space) => space.id == unit.spaceId);
@@ -88,7 +93,7 @@ class _UnitsPageState extends State<UnitsPage> {
             if (provider.loading) {
               return const Center(child: CircularProgressIndicator());
             }
-            if (allUnits.isEmpty) {
+            if (unitsToShow.isEmpty) {
               return const Center(child: Text('لا توجد بيانات متاحة'));
             }
             if (provider.error != null) {

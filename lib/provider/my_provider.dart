@@ -34,6 +34,10 @@ class SpacesProvider extends ChangeNotifier {
   List<Space> _randomSpaces = [];
   List<su.SpaceUnit> _randomUnits = [];
 
+  // متغيرات للمساحات والوحدات العشوائية للعرض في الرئيسية
+  List<Space> _randomSpacesForHome = [];
+  List<su.SpaceUnit> _randomUnitsForHome = [];
+
   List<Space> get spaces => _spaces;
   bool get loading => _loading;
   String? get error => _error;
@@ -47,6 +51,10 @@ class SpacesProvider extends ChangeNotifier {
   // Getters للمساحات والوحدات العشوائية
   List<Space> get randomSpaces => _randomSpaces;
   List<su.SpaceUnit> get randomUnits => _randomUnits;
+
+  // Getters للمساحات والوحدات العشوائية للعرض في الرئيسية
+  List<Space> get randomSpacesForHome => _randomSpacesForHome;
+  List<su.SpaceUnit> get randomUnitsForHome => _randomUnitsForHome;
 
   // دالة تعيين موقع المستخدم
   void setUserLocation(LatLng location) {
@@ -126,17 +134,20 @@ class SpacesProvider extends ChangeNotifier {
     if (_randomSpaces.isEmpty) {
     updateRandomData();
     }
+    updateRandomSpacesAndUnitsForHome();
     notifyListeners();
   }
 
   Future<void> loadSpacesFromLocal() async {
-    _spaces = await LocalDatabase.getSpaces();
+    final all = await LocalDatabase.getSpaces();
+    _spaces = all.length > 6 ? all.sublist(0, 6) : all;
     _isInitialized = true;
     notifyListeners();
   }
 
   Future<void> saveSpacesToLocal(List<Space> spaces) async {
-    await LocalDatabase.saveSpaces(spaces);
+    final toSave = spaces.length > 6 ? spaces.sublist(0, 6) : spaces;
+    await LocalDatabase.saveSpaces(toSave);
   }
 
   void reset() {
@@ -147,16 +158,16 @@ class SpacesProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // دالة للحصول على 4 مساحات عشوائية
-  List<Space> getRandomSpaces({int count = 4}) {
+  // دالة للحصول على 6 مساحات عشوائية
+  List<Space> getRandomSpaces({int count = 6}) {
     if (_spaces.isEmpty) return [];
     final List<Space> shuffledSpaces = List.from(_spaces);
     shuffledSpaces.shuffle();
     return shuffledSpaces.take(count).toList();
   }
 
-  // دالة للحصول على 4 وحدات عشوائية
-  List<su.SpaceUnit> getRandomUnits({int count = 4}) {
+  // دالة للحصول على 6 وحدات عشوائية
+  List<su.SpaceUnit> getRandomUnits({int count = 6}) {
     if (_spaces.isEmpty) return [];
     List<su.SpaceUnit> allUnits = [];
     for (final space in _spaces) {
@@ -186,7 +197,7 @@ class SpacesProvider extends ChangeNotifier {
   }
 
   // دالة للحصول على مساحات مميزة (ذات تقييم عالي)
-  List<Space> getFeaturedSpaces({int count = 4}) {
+  List<Space> getFeaturedSpaces({int count = 6}) {
     if (_spaces.isEmpty) return [];
     final List<Space> sortedSpaces = List.from(_spaces);
     sortedSpaces.sort((a, b) => b.rating.compareTo(a.rating));
@@ -194,7 +205,7 @@ class SpacesProvider extends ChangeNotifier {
   }
 
   // دالة للحصول على مساحات جديدة (آخر المساحات المضافة)
-  List<Space> getNewSpaces({int count = 4}) {
+  List<Space> getNewSpaces({int count = 6}) {
     if (_spaces.isEmpty) return [];
     final List<Space> sortedSpaces = List.from(_spaces);
     sortedSpaces.sort((a, b) => b.id.compareTo(a.id));
@@ -231,5 +242,47 @@ class SpacesProvider extends ChangeNotifier {
     } catch (e) {
       print('خطأ في تحميل البيانات العشوائية: $e');
     }
+  }
+
+  // دالة لإرجاع فقط 4 مساحات (للرئيسية في وضع offline)
+  List<Space> getFourSpacesForHome() {
+    if (_spaces.isEmpty) return [];
+    return _spaces.length > 4 ? _spaces.sublist(0, 4) : _spaces;
+  }
+
+  // دالة لإرجاع الوحدات المرتبطة بالمساحات المحلية + من ضمن الـ6 وحدات المحفوظة بدون تكرار
+  List<su.SpaceUnit> getUnitsForLocalSpacesAndRandomUnits(List<su.SpaceUnit> allUnits) {
+    final localSpaceIds = _spaces.map((s) => s.id).toSet();
+    final Set<int> addedUnitIds = {};
+    List<su.SpaceUnit> result = [];
+    // أضف الوحدات المرتبطة بالمساحات المحلية
+    for (final unit in allUnits) {
+      if (localSpaceIds.contains(unit.spaceId) && !addedUnitIds.contains(unit.id)) {
+        result.add(unit);
+        addedUnitIds.add(unit.id);
+      }
+    }
+    // أضف الوحدات من الـ6 وحدات المحفوظة (randomUnits)
+    for (final unit in _randomUnits) {
+      if (!addedUnitIds.contains(unit.id)) {
+        result.add(unit);
+        addedUnitIds.add(unit.id);
+      }
+    }
+    return result;
+  }
+
+  // دوال لتحديث العشوائية عند التحديث أو أول تحميل
+  void updateRandomSpacesAndUnitsForHome() {
+    final shuffledSpaces = List.of(_spaces)..shuffle();
+    _randomSpacesForHome = shuffledSpaces.length > 4 ? shuffledSpaces.sublist(0, 4) : shuffledSpaces;
+    final shuffledUnits = List.of(_randomUnits)..shuffle();
+    _randomUnitsForHome = shuffledUnits.length > 4 ? shuffledUnits.sublist(0, 4) : shuffledUnits;
+    notifyListeners();
+  }
+
+  // عند التحديث اليدوي (refresh)
+  Future<void> refreshRandomSpacesAndUnitsForHome() async {
+    updateRandomSpacesAndUnitsForHome();
   }
 }

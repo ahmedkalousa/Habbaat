@@ -119,6 +119,8 @@ class _HomePageState extends State<HomePage> {
       await unitsProvider.fetchSpacesAndUnits(forceRefresh: true);
       // تحديث القوائم العشوائية
       spacesProvider.updateRandomData();
+      // تحديث العشوائية للواجهة الرئيسية
+      await spacesProvider.refreshRandomSpacesAndUnitsForHome();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -195,6 +197,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final spacesProvider = Provider.of<SpacesProvider>(context);
+    final isOffline = !_isConnected;
+    final spacesToShow = isOffline ? spacesProvider.getFourSpacesForHome() : spacesProvider.spaces;
     return ScreenUtilInit(
       designSize: const Size(375, 812),
       minTextAdapt: true,
@@ -393,31 +398,34 @@ class _HomePageState extends State<HomePage> {
                         MySectionTile(title: "المساحات المتاحة"),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 16.w),
-                          child: GridView.builder(
-                            padding: EdgeInsets.symmetric(vertical: 8.h),
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: provider.randomSpaces.length,
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 1,
-                              crossAxisSpacing: 8.w,
-                              childAspectRatio: 1.7,
-                              mainAxisSpacing: 8.h),
-                            itemBuilder: (context, index) {
-                              return MyMiniCard(
-                                onTap: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    SpaceDetailsPage.id,
-                                    arguments: {'spaceId': provider.randomSpaces[index].id},
-                                  );
-                                },
-                                imagePath: baseUrlImage + provider.randomSpaces[index].images[0].imageUrl,
-                                title: provider.randomSpaces[index].name,
-                                subtitle: provider.randomSpaces[index].location,
-                              );
-                            },
-                          ),
+                          child: provider.randomSpacesForHome.isEmpty
+                              ? const Center(child: Text('لا توجد مساحات متاحة'))
+                              : GridView.builder(
+                                  padding: EdgeInsets.symmetric(vertical: 8.h),
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: provider.randomSpacesForHome.length,
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 1,
+                                    crossAxisSpacing: 8.w,
+                                    childAspectRatio: 1.7,
+                                    mainAxisSpacing: 8.h),
+                                  itemBuilder: (context, index) {
+                                    final space = provider.randomSpacesForHome[index];
+                                    return MyMiniCard(
+                                      onTap: () {
+                                        Navigator.pushNamed(
+                                          context,
+                                          SpaceDetailsPage.id,
+                                          arguments: {'spaceId': space.id},
+                                        );
+                                      },
+                                      imagePath: space.images.isNotEmpty ? baseUrlImage + space.images[0].imageUrl : '',
+                                      title: space.name,
+                                      subtitle: space.location,
+                                    );
+                                  },
+                                ),
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -443,13 +451,14 @@ class _HomePageState extends State<HomePage> {
                               return Center(child: Text('خطأ: ${value.error}'));
                             }
                             
-                            if (provider.randomUnits.isEmpty) {
+                            if (provider.randomUnitsForHome.isEmpty) {
                               return const Center(child: Text('لا توجد وحدات متاحة'));
                             }
+                            final unitsToShow = provider.randomUnitsForHome;
                             return Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16.w),
                               child: GridView.builder(
-                                itemCount: provider.randomUnits.length,
+                                itemCount: unitsToShow.length,
                                 shrinkWrap: true,
                                 padding: EdgeInsets.symmetric(vertical: 8.h),
                                 physics: const NeverScrollableScrollPhysics(),
@@ -461,7 +470,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 itemBuilder: (context, index) {
                                   String uniteSpaceLocation = provider.spaces.firstWhere(
-                                    (space) => space.id == provider.randomUnits[index].spaceId,
+                                    (space) => space.id == unitsToShow[index].spaceId,
                                     orElse: () => provider.spaces[0],
                                   ).governorate;
                                   return MyMiniCard(
@@ -469,11 +478,11 @@ class _HomePageState extends State<HomePage> {
                                       Navigator.pushNamed(
                                         context,
                                         UnitDetailsPage.id,
-                                        arguments: {'unitId': provider.randomUnits[index].id},
+                                        arguments: {'unitId': unitsToShow[index].id},
                                       );
                                     },
-                                    imagePath: baseUrlImage + (provider.randomUnits[index].imageUrl ?? ''),
-                                    title: provider.randomUnits[index].unitCategoryName,
+                                    imagePath: baseUrlImage + (unitsToShow[index].imageUrl ?? ''),
+                                    title: unitsToShow[index].unitCategoryName,
                                     subtitle: uniteSpaceLocation,
                                   );
                                 },

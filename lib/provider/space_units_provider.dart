@@ -71,7 +71,8 @@ class SpaceUnitsProvider extends ChangeNotifier {
   }
 
   Future<void> saveUnitsToLocal(List<SpaceUnit> units) async {
-    await LocalDatabase.saveUnits(units);
+    final toSave = units.length > 6 ? units.sublist(0, 6) : units;
+    await LocalDatabase.saveUnits(toSave);
   }
 
   void setUnits(List<SpaceUnit> units) {

@@ -9,6 +9,9 @@ import 'package:work_spaces/provider/my_provider.dart';
 import 'package:work_spaces/provider/space_units_provider.dart';
 import 'package:work_spaces/util/constant.dart';
 import 'package:work_spaces/view/my_page/space_details_page.dart';
+import 'package:collection/collection.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'dart:async';
 
 class UnitDetailsPage extends StatefulWidget {
   static const id = '/HallDetailsPage';
@@ -73,41 +76,41 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> with TickerProviderSt
       return _buildErrorScaffold('رقم الوحدة غير صالح');
     }
 
-    final unit = Provider.of<SpaceUnitsProvider>(context, listen: false)
-        .units
-        .where((u) => u.id == unitId)
-        .firstOrNull;
+    return Consumer<SpaceUnitsProvider>(
+      builder: (context, provider, child) {
+        final unit = provider.units.firstWhereOrNull((u) => u.id == unitId);
+        if (unit == null) {
+          return _buildErrorScaffold('لم يتم العثور على الوحدة المطلوبة \n يرجى التأكد من الاتصال بالانترنت');
+        }
 
-    if (unit == null) {
-      return _buildErrorScaffold('لم يتم العثور على الوحدة المطلوبة');
-    }
+        final space = Provider.of<SpacesProvider>(context, listen: false)
+            .spaces
+            .where((s) => s.id == unit.spaceId)
+            .firstOrNull;
 
-    final space = Provider.of<SpacesProvider>(context, listen: false)
-        .spaces
-        .where((s) => s.id == unit.spaceId)
-        .firstOrNull;
+        final coverImage = (unit.imageUrl != null && unit.imageUrl!.isNotEmpty)
+            ? (unit.imageUrl!.startsWith('http') ? unit.imageUrl! : baseUrlImage + unit.imageUrl!)
+            : 'https://via.placeholder.com/400x300';
 
-    final coverImage = (unit.imageUrl != null && unit.imageUrl!.isNotEmpty)
-        ? (unit.imageUrl!.startsWith('http') ? unit.imageUrl! : baseUrlImage + unit.imageUrl!)
-        : 'https://via.placeholder.com/400x300';
-
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF7F8FA),
-        body: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            _buildSliverAppBar(context, coverImage),
-            SliverList(
-              delegate: SliverChildListDelegate([
-                _buildAnimatedContent(unit, space),
-                SizedBox(height: 20.h),
-              ]),
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            backgroundColor: const Color(0xFFF7F8FA),
+            body: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                _buildSliverAppBar(context, coverImage),
+                SliverList(
+                  delegate: SliverChildListDelegate([
+                    _buildAnimatedContent(unit, space),
+                    SizedBox(height: 20.h),
+                  ]),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
