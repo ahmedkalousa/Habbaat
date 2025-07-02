@@ -45,7 +45,16 @@ class LocalDatabase {
   static Future<void> saveSpaces(List<Space> spaces) async {
     final db = await database;
     await db.delete('spaces');
-    for (var space in spaces) {
+    List<Space> withUnits = spaces.where((s) => s.spaceUnits.isNotEmpty).toList();
+    if (withUnits.length < 5) {
+      print('withUnits.length < 5');
+      int needed = 5 - withUnits.length;
+      List<Space> withoutUnits = spaces.where((s) => s.spaceUnits.isEmpty).take(needed).toList();
+      withUnits.addAll(withoutUnits);
+      print('withUnits.length = ${withUnits.length}');
+    }
+    final toSave = withUnits.length > 6 ? withUnits.sublist(0, 6) : withUnits;
+    for (var space in toSave) {
       await db.insert(
         'spaces',
         {

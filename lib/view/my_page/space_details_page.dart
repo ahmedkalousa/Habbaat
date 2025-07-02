@@ -514,6 +514,111 @@ void _showTooltip(int idx) {
                                     ],
                                   ),
                                 ),
+                                if(space.spaceUnits.isNotEmpty)
+                                  SizedBox(
+                                    height: 180.h,
+                                child:
+                                ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: space.spaceUnits.length,
+                                  itemBuilder: (context, index) {
+                                  final unit = space.spaceUnits[index];
+                                  final unitImage = unit.imageUrl.isNotEmpty
+                                      ? baseUrlImage + unit.imageUrl
+                                      : 'https://via.placeholder.com/200x150';
+                                  return 
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context, 
+                                        MaterialPageRoute(
+                                          builder: (context) => UnitDetailsPage(),
+                                          settings: RouteSettings(
+                                            arguments: {'unitId': unit.id},
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      width: 200.w,
+                                      margin: EdgeInsetsDirectional.only(end: 16.w),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16.r),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.1),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(16.r),
+                                        child: Stack(
+                                          children: [
+                                            CachedNetworkImage(
+                                              imageUrl: unitImage,
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                              height: double.infinity,
+                                              placeholder: (context, url) => Container(
+                                                color: Colors.grey.shade200,
+                                                child: Center(
+                                                  child: CircularProgressIndicator(
+                                                    color: primaryColor,
+                                                    strokeWidth: 2,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              bottom: 0,
+                                              left: 0,
+                                              right: 0,
+                                              child: Container(
+                                                padding: EdgeInsets.all(12.w),
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
+                                                    colors: [
+                                                      Colors.transparent,
+                                                      Colors.black.withOpacity(0.7),
+                                                    ],
+                                                  ),
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      unit.name,
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 14.sp,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      unit.unitCategoryName,
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 12.sp,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                    },
+                                  ),
+                                ),
+                                
+                        
                                 // Content
                                 Padding(
                                   padding: EdgeInsets.all(20.w),
