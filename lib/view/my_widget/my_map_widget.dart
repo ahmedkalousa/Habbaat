@@ -191,8 +191,167 @@ class _MyMapWidgetState extends State<MyMapWidget> {
       final spacesWithCoords = _getSpacesWithCoordinates();
       final defaultCenter = _getDefaultCenter();
       
-      print('Building map with ${spacesWithCoords.length} spaces with coordinates');
+      print('Building map with \u001b[32m${spacesWithCoords.length}\u001b[0m spaces with coordinates');
       
+      List<Marker> markers = [];
+      if (widget.isFullScreen) {
+        markers = [
+          ...spacesWithCoords.map((space) => Marker(
+                point: LatLng((space['lat'] as num).toDouble(), (space['lng'] as num).toDouble()),
+                width: 100.w,
+                height: 80.h,
+                child: Column(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(6.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: GestureDetector(
+                        onTap: () {
+                          if (widget.isFullScreen) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SpaceDetailsPage(),
+                                settings: RouteSettings(arguments: {'spaceId': space['id']}),
+                              ),
+                            );
+                          }
+                        },
+                        child: Text(
+                          space['name'].toString(),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Icon(
+                      Icons.location_on,
+                      color: Colors.red,
+                      size: 32.sp,
+                    ),
+                  ],
+                ),
+              )),
+        ];
+        if (Provider.of<SpacesProvider>(context).isUserLocationSet && widget.isFullScreen) {
+          markers.add(
+            Marker(
+              point: Provider.of<SpacesProvider>(context).userLocation!,
+              width: 80.w,
+              height: 60.h,
+              child: Column(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.5.h),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(3.r),
+                    ),
+                    child: Text(
+                      'انت',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(height: 1.h),
+                  Icon(
+                    Icons.location_on,
+                    color: Colors.blue,
+                    size: 30.sp,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_mapController != null && markers.isNotEmpty) {
+            if (markers.length == 1) {
+              _mapController!.move(markers[0].point, 16.0);
+            } else {
+              final bounds = LatLngBounds.fromPoints(markers.map((m) => m.point).toList());
+              _mapController!.fitCamera(
+                CameraFit.bounds(
+                  bounds: bounds,
+                  padding: EdgeInsets.all(40),
+                  maxZoom: 16,
+                ),
+              );
+            }
+          }
+        });
+      } else {
+        if (widget.latitude != null && widget.longitude != null && widget.latitude != 0.0 && widget.longitude != 0.0) {
+          markers = [
+            Marker(
+              point: LatLng(widget.latitude!, widget.longitude!),
+              width: 100.w,
+              height: 80.h,
+              child: Column(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(6.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      widget.spaceName,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Icon(
+                    Icons.location_on,
+                    color: Colors.red,
+                    size: 32.sp,
+                  ),
+                ],
+              ),
+            ),
+          ];
+        } else {
+          markers = [];
+        }
+      }
+
       return Stack(
         children: [
           Container(
@@ -219,96 +378,7 @@ class _MyMapWidgetState extends State<MyMapWidget> {
                     maxZoom: 19,
                   ),
                   MarkerLayer(
-                    markers: [
-                      ...spacesWithCoords.map((space) => Marker(
-                            point: LatLng((space['lat'] as num).toDouble(), (space['lng'] as num).toDouble()),
-                            width: 100.w,
-                            height: 80.h,
-                            child: Column(
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.8),
-                                    borderRadius: BorderRadius.circular(6.r),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.3),
-                                        blurRadius: 4,
-                                        offset: Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      if (widget.isFullScreen) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => SpaceDetailsPage(),
-                                            settings: RouteSettings(arguments: {'spaceId': space['id']}),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                    child: Text(
-                                      space['name'].toString(),
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11.sp,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: 2.h),
-                                Icon(
-                                  Icons.location_on,
-                                  color: Colors.red,
-                                  size: 32.sp,
-                                ),
-                              ],
-                            ),
-                          )),
-                      
-                      if (Provider.of<SpacesProvider>(context).isUserLocationSet && widget.isFullScreen)
-                        Marker(
-                          point: Provider.of<SpacesProvider>(context).userLocation!,
-                          width: 80.w,
-                          height: 60.h,
-                          child: Column(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 2.w, vertical: 0.5.h),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.7),
-                                  borderRadius: BorderRadius.circular(3.r),
-                                ),
-                                child: Text(
-                                  'انت',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              SizedBox(height: 1.h),
-                              Icon(
-                                Icons.location_on,
-                                color: Colors.blue,
-                                size: 30.sp,
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
+                    markers: markers,
                   ),
                 ],
               ),
